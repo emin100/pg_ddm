@@ -1,0 +1,7 @@
+{% macro render_form(list) %}
+
+{% for row in list %}
+<a  href="{{ row.href }}" class="btn btn-sm btn-outline-secondary">{{ row.name }}</a>
+{% endfor %}
+
+{% endmacro %}

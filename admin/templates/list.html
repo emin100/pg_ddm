@@ -1,0 +1,56 @@
+{% extends "main_template.html" %}
+{% import "utils/table.html" as table %}
+{% import "utils/buttons.html" as buttons %}
+{% block scripts %}
+{{ super() }}
+<script type="text/javascript">
+    $(function () {
+        $('input[id^="autocomplete"]').keyup(function () {
+            var field = $(this)
+            // if (field.val().split('.').length > 1) {
+            $.ajax({
+                url: "{{ url_for('autocomplete') }}/" + $(this)[0].id + "/" + field.val()
+            }).done(function (data) {
+                field.autocomplete({
+                    select: function (event, ui) {
+                        const rep_field = this;
+                        $.grep(data, function (element, index) {
+                            if (element.label === ui.item.value) {
+                                $('#' + rep_field.id.replace('autocomplete_', '')).val(element.value)
+                            }
+                        });
+                    },
+                    source: function (request, response) {
+                        var return_data = new Array();
+                        $.each(data, function (index, item) {
+                            if (jQuery.type(item) == 'string') {
+                                return_data.push(item);
+                            } else {
+                                return_data.push(item.label);
+                            }
+
+                        });
+                        response(return_data);
+                    },
+                    minLength: 2
+                });
+            });
+
+            // }
+        });
+    });
+</script>
+{% endblock %}
+{% block main_header %}
+{{ main_header }}
+{% endblock %}
+{% block button_list %}
+{{buttons.render_buttons(button_list)}}
+{% endblock %}
+
+{% block in_page %}
+{% if form %}
+{{ wtf.quick_form(form) }}
+{% endif %}
+{{ table.render_table(list,headers,links=links,pagination=pagination) }}
+{% endblock %}

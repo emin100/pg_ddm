@@ -1,0 +1,10 @@
+Flask
+Flask-Bootstrap
+Flask-Nav
+Flask-Babel
+Flask-Login
+flask_wtf
+is-safe-url
+etcd3
+passlib
+psycopg2-binary

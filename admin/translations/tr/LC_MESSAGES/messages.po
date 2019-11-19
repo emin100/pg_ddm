@@ -1,0 +1,491 @@
+# Turkish translations for PROJECT.
+# Copyright (C) 2019 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2019.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2019-11-08 12:34+0300\n"
+"PO-Revision-Date: 2019-02-20 13:51+0300\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: tr\n"
+"Language-Team: tr <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.7.0\n"
+
+#: app.py:104
+msgid "Bye Bye"
+msgstr "Güle Güle"
+
+#: app.py:139
+msgid "Logged in successfully."
+msgstr "Başarıyla Giriş Yaptınız."
+
+#: app.py:148
+msgid "Login Failed!"
+msgstr "Giriş Başarısız!"
+
+#: app.py:163 app.py:208 app.py:283 app.py:325 app.py:394
+msgid "Update"
+msgstr "Düzenle"
+
+#: app.py:163 app.py:225 app.py:252 app.py:296 app.py:336
+msgid "List"
+msgstr "Liste"
+
+#: app.py:193
+msgid "DB Error"
+msgstr ""
+
+#: app.py:198 app.py:201 app.py:211 app.py:217 templates/main_template.html:58
+msgid "Tables"
+msgstr "Tablolar"
+
+#: app.py:198 app.py:434
+msgid "Updated"
+msgstr "Güncellendi"
+
+#: app.py:207 app.py:239 app.py:251 app.py:295 app.py:335 forms.py:37
+msgid "Name"
+msgstr "Ad"
+
+#: app.py:207 app.py:239 forms.py:25 forms.py:70 forms.py:77 forms.py:78
+#: forms.py:79
+msgid "Group Name"
+msgstr "Grup Adı"
+
+#: app.py:225 app.py:252 app.py:296 app.py:336
+msgid "New"
+msgstr "Yeni"
+
+#: app.py:231 app.py:236 app.py:335 forms.py:39
+msgid "Rule"
+msgstr "Kural"
+
+#: app.py:231 app.py:262 app.py:306 app.py:363
+msgid "Added"
+msgstr "Eklendi"
+
+#: app.py:233 app.py:242 templates/main_template.html:64
+msgid "Rules"
+msgstr "Kurallar"
+
+#: app.py:236 app.py:277 app.py:321 app.py:391
+msgid "Deleted"
+msgstr "Silindi"
+
+#: app.py:240 app.py:282 app.py:324 app.py:393
+msgid "Delete"
+msgstr "Sil"
+
+#: app.py:251 app.py:295 app.py:335 forms.py:38 forms.py:72 forms.py:80
+#: forms.py:85
+msgid "Enabled"
+msgstr "Aktif"
+
+#: app.py:262 app.py:277
+msgid "SQL User"
+msgstr "SQL Kullanıcısı"
+
+#: app.py:274 app.py:284 app.py:318 app.py:326 templates/main_template.html:74
+msgid "Users"
+msgstr "Kullanıcılar"
+
+#: app.py:306 app.py:321
+msgid "DB User"
+msgstr "DB Kullanıcısı"
+
+#: app.py:335 forms.py:49
+msgid "Description"
+msgstr "Tanım"
+
+#: app.py:335
+msgid "Properties"
+msgstr ""
+
+#: app.py:363 app.py:391
+msgid "Group"
+msgstr "Grup"
+
+#: app.py:388 app.py:395 templates/main_template.html:52
+msgid "Groups"
+msgstr "Gruplar"
+
+#: app.py:434 app.py:441 templates/main_template.html:100
+msgid "Admin User"
+msgstr ""
+
+#: app.py:484
+msgid "PgBouncer Config"
+msgstr ""
+
+#: forms.py:12 forms.py:13
+msgid "Username"
+msgstr "Kullanıcı Adı"
+
+#: forms.py:14 forms.py:15 forms.py:88 forms.py:106
+msgid "Password"
+msgstr "Şifre"
+
+#: forms.py:16
+msgid "Remember me"
+msgstr "Beni Hatırla"
+
+#: forms.py:17 templates/main_template.html:28
+msgid "Sign in"
+msgstr "Giriş"
+
+#: forms.py:21
+msgid "Table Column"
+msgstr "Tablo Kolonu"
+
+#: forms.py:22 forms.py:26
+msgid "Please search like this(DB.SCHEMA.TABLE.COLUMN)"
+msgstr "Lütfen örnekteki gibi arayınız(DATABASE.ŞEMA.TABLO.KOLON)"
+
+#: forms.py:27 forms.py:66 forms.py:73 forms.py:81 forms.py:91 forms.py:100
+#: forms.py:108
+msgid "Submit"
+msgstr "Kaydet"
+
+#: forms.py:40
+msgid "Send Null"
+msgstr "Boş Ata"
+
+#: forms.py:40
+msgid "Delete Column"
+msgstr "Kolonu Sil"
+
+#: forms.py:41
+msgid "Partial"
+msgstr "Kısmi"
+
+#: forms.py:41
+msgid "Partial Email"
+msgstr "Kısmi E-Posta"
+
+#: forms.py:42
+msgid "Random Date"
+msgstr "Rastgele Tarih"
+
+#: forms.py:43
+msgid "Random Date Between"
+msgstr ""
+
+#: forms.py:44
+msgid "Random Int Between"
+msgstr ""
+
+#: forms.py:45
+msgid "Random Phone"
+msgstr "Rastgele Telefon"
+
+#: forms.py:46
+msgid "Random String"
+msgstr "Rastgele Karakter"
+
+#: forms.py:47
+msgid "Random Zip"
+msgstr "Rastgele Zip"
+
+#: forms.py:50
+msgid "Start Date"
+msgstr ""
+
+#: forms.py:53
+msgid "End Date"
+msgstr ""
+
+#: forms.py:56
+msgid "Start"
+msgstr ""
+
+#: forms.py:57
+msgid "End"
+msgstr ""
+
+#: forms.py:58 forms.py:59
+msgid "Prefix"
+msgstr ""
+
+#: forms.py:61
+msgid "Suffix"
+msgstr ""
+
+#: forms.py:63
+msgid "Padding"
+msgstr ""
+
+#: forms.py:64
+msgid "Length"
+msgstr "Uzunluk"
+
+#: forms.py:71
+msgid "User ID"
+msgstr "Kullanıcı ID"
+
+#: forms.py:86
+msgid "Language"
+msgstr ""
+
+#: forms.py:89
+msgid "E-mail"
+msgstr ""
+
+#: forms.py:99 forms.py:104
+msgid "Database"
+msgstr ""
+
+#: forms.py:105
+msgid "User"
+msgstr ""
+
+#: templates/dashboard.html:3 templates/main_template.html:46
+msgid "Dashboard"
+msgstr "Kontrol Paneli"
+
+#: templates/login.html:11
+msgid "Please sign in"
+msgstr "Lütfen Giriş Yapınız"
+
+#: templates/main_template.html:21
+#, python-format
+msgid "Hello %(user)s!"
+msgstr ""
+
+#: templates/main_template.html:30
+msgid "Sign out"
+msgstr "Çıkış"
+
+#: templates/main_template.html:70
+msgid "Masking Pass Tags"
+msgstr "Maskeleme Kaçış Etiketleri"
+
+#: templates/main_template.html:79
+msgid "DB Users"
+msgstr "DB Kullanıcıları"
+
+#: templates/main_template.html:85
+msgid "SQL Users"
+msgstr "SQL Kullanıcıları"
+
+#: templates/main_template.html:89
+msgid "General Settings"
+msgstr ""
+
+#: templates/main_template.html:94
+msgid "PgBouncer"
+msgstr ""
+
+#: templates/utils/table.html:11
+msgid "Settings"
+msgstr "İşlemler"
+
+#~ msgid "Remember me"
+#~ msgstr "Beni Hatırla"
+
+#~ msgid "Sign in"
+#~ msgstr "Giriş"
+
+#~ msgid "Login Failed!"
+#~ msgstr "Giriş Başarısız!"
+
+#~ msgid "Username"
+#~ msgstr "Kullanıcı Adı"
+
+#~ msgid "Password"
+#~ msgstr "Şifre"
+
+#~ msgid "Please sign in"
+#~ msgstr "Lütfen Giriş Yapınız"
+
+#~ msgid "PgBouncer Mask"
+#~ msgstr ""
+
+#~ msgid "Hello %(user)s!"
+#~ msgstr ""
+
+#~ msgid "Sign out"
+#~ msgstr "Çıkış"
+
+#~ msgid "Hello World!"
+#~ msgstr ""
+
+#~ msgid "This field is required."
+#~ msgstr ""
+
+#~ msgid "File does not have an approved extension: {extensions}"
+#~ msgstr ""
+
+#~ msgid "File does not have an approved extension."
+#~ msgstr ""
+
+#~ msgid "algorithm"
+#~ msgstr ""
+
+#~ msgid "Invalid field name '%s'."
+#~ msgstr ""
+
+#~ msgid "Field must be equal to %(other_name)s."
+#~ msgstr ""
+
+#~ msgid "Field must be at least %(min)d character long."
+#~ msgid_plural "Field must be at least %(min)d characters long."
+#~ msgstr[0] ""
+
+#~ msgid "Field cannot be longer than %(max)d character."
+#~ msgid_plural "Field cannot be longer than %(max)d characters."
+#~ msgstr[0] ""
+
+#~ msgid "Field must be between %(min)d and %(max)d characters long."
+#~ msgstr ""
+
+#~ msgid "Number must be at least %(min)s."
+#~ msgstr ""
+
+#~ msgid "Number must be at most %(max)s."
+#~ msgstr ""
+
+#~ msgid "Number must be between %(min)s and %(max)s."
+#~ msgstr ""
+
+#~ msgid "Invalid input."
+#~ msgstr ""
+
+#~ msgid "Invalid email address."
+#~ msgstr ""
+
+#~ msgid "Invalid IP address."
+#~ msgstr ""
+
+#~ msgid "Invalid Mac address."
+#~ msgstr ""
+
+#~ msgid "Invalid URL."
+#~ msgstr ""
+
+#~ msgid "Invalid UUID."
+#~ msgstr ""
+
+#~ msgid "Invalid value, must be one of: %(values)s."
+#~ msgstr ""
+
+#~ msgid "Invalid value, can't be any of: %(values)s."
+#~ msgstr ""
+
+#~ msgid "Invalid CSRF Token"
+#~ msgstr ""
+
+#~ msgid "CSRF token missing"
+#~ msgstr ""
+
+#~ msgid "CSRF failed"
+#~ msgstr ""
+
+#~ msgid "CSRF token expired"
+#~ msgstr ""
+
+#~ msgid "Not a valid choice"
+#~ msgstr ""
+
+#~ msgid "Not a valid list"
+#~ msgstr ""
+
+#~ msgid "Not a valid integer list"
+#~ msgstr ""
+
+#~ msgid "Please input a date/time value"
+#~ msgstr ""
+
+#~ msgid "Invalid date/time input"
+#~ msgstr ""
+
+#~ msgid "Invalid Choice: could not coerce"
+#~ msgstr ""
+
+#~ msgid "Invalid choice(s): one or more data inputs could not be coerced"
+#~ msgstr ""
+
+#~ msgid "'%(value)s' is not a valid choice for this field"
+#~ msgstr ""
+
+#~ msgid "Not a valid integer value"
+#~ msgstr ""
+
+#~ msgid "Not a valid decimal value"
+#~ msgstr ""
+
+#~ msgid "Not a valid float value"
+#~ msgstr ""
+
+#~ msgid "Not a valid datetime value"
+#~ msgstr ""
+
+#~ msgid "Not a valid date value"
+#~ msgstr ""
+
+#~ msgid "Not a valid time value"
+#~ msgstr ""
+
+#~ msgid "Rule Adds"
+#~ msgstr ""
+
+#~ msgid "Users Adds"
+#~ msgstr ""
+
+#~ msgid "DB Users Adds"
+#~ msgstr ""
+
+#~ msgid "Groups Adds"
+#~ msgstr ""
+
+#~ msgid "Groups Deleted"
+#~ msgstr ""
+
+#~ msgid "Delete Column"
+#~ msgstr "Kolonu Sil"
+
+#~ msgid "Column"
+#~ msgstr ""
+
+#~ msgid "Email"
+#~ msgstr "E-posta"
+
+#~ msgid "Random"
+#~ msgstr "Rastgele"
+
+#~ msgid "Date"
+#~ msgstr "Tarih"
+
+#~ msgid "Int"
+#~ msgstr ""
+
+#~ msgid "Phone"
+#~ msgstr "Telefon"
+
+#~ msgid "String"
+#~ msgstr "Karakter"
+
+#~ msgid "Zip"
+#~ msgstr ""
+
+#~ msgid "Random Int"
+#~ msgstr "Rastgele Int"
+
+#~ msgid "Role to Group"
+#~ msgstr "Rolden Gruba"
+
+#~ msgid "Refreshed"
+#~ msgstr "Yenilendi"
+
+#~ msgid "Refresh"
+#~ msgstr "Yenile"
+
+#~ msgid "Pass Tags"
+#~ msgstr "Maskeleme Kaçış Etiketleri"
+

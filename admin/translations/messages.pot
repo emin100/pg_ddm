@@ -1,0 +1,287 @@
+# Translations template for PROJECT.
+# Copyright (C) 2019 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2019.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2019-11-08 12:34+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.7.0\n"
+
+#: app.py:104
+msgid "Bye Bye"
+msgstr ""
+
+#: app.py:139
+msgid "Logged in successfully."
+msgstr ""
+
+#: app.py:148
+msgid "Login Failed!"
+msgstr ""
+
+#: app.py:163 app.py:208 app.py:283 app.py:325 app.py:394
+msgid "Update"
+msgstr ""
+
+#: app.py:163 app.py:225 app.py:252 app.py:296 app.py:336
+msgid "List"
+msgstr ""
+
+#: app.py:193
+msgid "DB Error"
+msgstr ""
+
+#: app.py:198 app.py:201 app.py:211 app.py:217 templates/main_template.html:58
+msgid "Tables"
+msgstr ""
+
+#: app.py:198 app.py:434
+msgid "Updated"
+msgstr ""
+
+#: app.py:207 app.py:239 app.py:251 app.py:295 app.py:335 forms.py:37
+msgid "Name"
+msgstr ""
+
+#: app.py:207 app.py:239 forms.py:25 forms.py:70 forms.py:77 forms.py:78
+#: forms.py:79
+msgid "Group Name"
+msgstr ""
+
+#: app.py:225 app.py:252 app.py:296 app.py:336
+msgid "New"
+msgstr ""
+
+#: app.py:231 app.py:236 app.py:335 forms.py:39
+msgid "Rule"
+msgstr ""
+
+#: app.py:231 app.py:262 app.py:306 app.py:363
+msgid "Added"
+msgstr ""
+
+#: app.py:233 app.py:242 templates/main_template.html:64
+msgid "Rules"
+msgstr ""
+
+#: app.py:236 app.py:277 app.py:321 app.py:391
+msgid "Deleted"
+msgstr ""
+
+#: app.py:240 app.py:282 app.py:324 app.py:393
+msgid "Delete"
+msgstr ""
+
+#: app.py:251 app.py:295 app.py:335 forms.py:38 forms.py:72 forms.py:80
+#: forms.py:85
+msgid "Enabled"
+msgstr ""
+
+#: app.py:262 app.py:277
+msgid "SQL User"
+msgstr ""
+
+#: app.py:274 app.py:284 app.py:318 app.py:326 templates/main_template.html:74
+msgid "Users"
+msgstr ""
+
+#: app.py:306 app.py:321
+msgid "DB User"
+msgstr ""
+
+#: app.py:335 forms.py:49
+msgid "Description"
+msgstr ""
+
+#: app.py:335
+msgid "Properties"
+msgstr ""
+
+#: app.py:363 app.py:391
+msgid "Group"
+msgstr ""
+
+#: app.py:388 app.py:395 templates/main_template.html:52
+msgid "Groups"
+msgstr ""
+
+#: app.py:434 app.py:441 templates/main_template.html:100
+msgid "Admin User"
+msgstr ""
+
+#: app.py:484
+msgid "PgBouncer Config"
+msgstr ""
+
+#: forms.py:12 forms.py:13
+msgid "Username"
+msgstr ""
+
+#: forms.py:14 forms.py:15 forms.py:88 forms.py:106
+msgid "Password"
+msgstr ""
+
+#: forms.py:16
+msgid "Remember me"
+msgstr ""
+
+#: forms.py:17 templates/main_template.html:28
+msgid "Sign in"
+msgstr ""
+
+#: forms.py:21
+msgid "Table Column"
+msgstr ""
+
+#: forms.py:22 forms.py:26
+msgid "Please search like this(DB.SCHEMA.TABLE.COLUMN)"
+msgstr ""
+
+#: forms.py:27 forms.py:66 forms.py:73 forms.py:81 forms.py:91 forms.py:100
+#: forms.py:108
+msgid "Submit"
+msgstr ""
+
+#: forms.py:40
+msgid "Send Null"
+msgstr ""
+
+#: forms.py:40
+msgid "Delete Column"
+msgstr ""
+
+#: forms.py:41
+msgid "Partial"
+msgstr ""
+
+#: forms.py:41
+msgid "Partial Email"
+msgstr ""
+
+#: forms.py:42
+msgid "Random Date"
+msgstr ""
+
+#: forms.py:43
+msgid "Random Date Between"
+msgstr ""
+
+#: forms.py:44
+msgid "Random Int Between"
+msgstr ""
+
+#: forms.py:45
+msgid "Random Phone"
+msgstr ""
+
+#: forms.py:46
+msgid "Random String"
+msgstr ""
+
+#: forms.py:47
+msgid "Random Zip"
+msgstr ""
+
+#: forms.py:50
+msgid "Start Date"
+msgstr ""
+
+#: forms.py:53
+msgid "End Date"
+msgstr ""
+
+#: forms.py:56
+msgid "Start"
+msgstr ""
+
+#: forms.py:57
+msgid "End"
+msgstr ""
+
+#: forms.py:58 forms.py:59
+msgid "Prefix"
+msgstr ""
+
+#: forms.py:61
+msgid "Suffix"
+msgstr ""
+
+#: forms.py:63
+msgid "Padding"
+msgstr ""
+
+#: forms.py:64
+msgid "Length"
+msgstr ""
+
+#: forms.py:71
+msgid "User ID"
+msgstr ""
+
+#: forms.py:86
+msgid "Language"
+msgstr ""
+
+#: forms.py:89
+msgid "E-mail"
+msgstr ""
+
+#: forms.py:99 forms.py:104
+msgid "Database"
+msgstr ""
+
+#: forms.py:105
+msgid "User"
+msgstr ""
+
+#: templates/dashboard.html:3 templates/main_template.html:46
+msgid "Dashboard"
+msgstr ""
+
+#: templates/login.html:11
+msgid "Please sign in"
+msgstr ""
+
+#: templates/main_template.html:21
+#, python-format
+msgid "Hello %(user)s!"
+msgstr ""
+
+#: templates/main_template.html:30
+msgid "Sign out"
+msgstr ""
+
+#: templates/main_template.html:70
+msgid "Masking Pass Tags"
+msgstr ""
+
+#: templates/main_template.html:79
+msgid "DB Users"
+msgstr ""
+
+#: templates/main_template.html:85
+msgid "SQL Users"
+msgstr ""
+
+#: templates/main_template.html:89
+msgid "General Settings"
+msgstr ""
+
+#: templates/main_template.html:94
+msgid "PgBouncer"
+msgstr ""
+
+#: templates/utils/table.html:11
+msgid "Settings"
+msgstr ""
+

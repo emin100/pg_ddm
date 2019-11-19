@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block body_attribs %} class="text-center"{% endblock%}
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="{{url_for('.static', filename='css/signin.css')}}">
+{% endblock %}
+{% block content %}
+
+<form class="form-signin" method="post">
+    {{ form.hidden_tag() }}
+    <h1 class="h3 mb-3 font-weight-normal">{{ _('Please sign in') }}</h1>
+    <div class="row">
+
+    {%- with messages = get_flashed_messages(with_categories=True) %}
+    {%- if messages %}
+    {{utils.flashed_messages(messages)}}
+    {%- endif %}
+    {%- endwith %}
+</div>
+    {{ form.username.label(class="sr-only") }}
+    {{ form.username(class="form-control",autofocus=true) }}
+    {{ form.password.label(class="sr-only") }}
+    {{ form.password(class="form-control") }}
+    <div class="checkbox mb-3">
+        <label>
+            {{ form.remember_me(value="remember_me") }} {{ form.remember_me.label}}
+        </label>
+    </div>
+    {{ form.submit(class="btn btn-lg btn-primary btn-block") }}
+</form>
+
+{% endblock %}

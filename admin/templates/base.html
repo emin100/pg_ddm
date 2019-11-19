@@ -1,0 +1,45 @@
+{% extends "bootstrap/base.html" %}
+{% import "bootstrap/fixes.html" as fixes %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "bootstrap/utils.html" as utils %}
+{% block title %}pg_ddm{% endblock %}
+
+
+{% block styles %}
+<link rel="stylesheet" href="{{url_for('.static', filename='css/bootstrap.min.css')}}">
+<link rel="stylesheet" href="{{url_for('.static', filename='css/jquery-ui.css')}}">
+<style>
+    .bd-placeholder-img {
+        font-size: 1.125rem;
+        text-anchor: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+
+    @media (min-width: 768px) {
+        .bd-placeholder-img-lg {
+            font-size: 3.5rem;
+        }
+    }
+</style>
+{{fixes.ie8()}}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{url_for('.static', filename='js/jquery-3.3.1.min.js')}}"
+        integrity="sha384-tsQFqpEReu7ZLhBV2VZlAu7zcOV+rXbYlF2cqB8txI/8aZajjp4Bqd+V6D5IgvKT"
+        crossorigin="anonymous"></script>
+<script src="{{url_for('.static', filename='js/bootstrap.bundle.min.js')}}"
+        integrity="sha384-xrRywqdh3PHs8keKZN+8zzc5TX0GRTLCcmivcbNJWm2rs5C8PRhcEn3czEjhAO9o"
+        crossorigin="anonymous"></script>
+<script src="{{url_for('.static', filename='js/feather.min.js')}}"></script>
+<script src="{{url_for('.static', filename='js/Chart.min.js')}}"></script>
+<script src="{{url_for('.static', filename='js/jquery-ui.min.js')}}"
+        integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
+{% endblock %}
+
+
+
+

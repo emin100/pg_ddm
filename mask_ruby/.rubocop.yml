@@ -1,0 +1,51 @@
+require: rubocop-rspec
+
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
+Style/SafeNavigation:
+  Enabled: false
+
+Documentation:
+  Enabled: false
+
+LineLength:
+  Enabled: false
+
+MethodLength:
+  Enabled: false
+
+ClassLength:
+  Enabled: false
+
+Metrics/AbcSize:
+  Enabled: false
+
+Metrics/BlockNesting:
+  Enabled: false
+
+Metrics/ParameterLists:
+  Enabled: false
+
+Metrics/PerceivedComplexity:
+  Enabled: false
+
+Metrics/BlockLength:
+  Enabled: false
+
+RSpec/ExampleLength:
+  Enabled: false
+
+RSpec/MultipleExpectations:
+  Enabled: false
+
+RSpec/NestedGroups:
+  Enabled: false
+
+# extend self preserves private methods,
+# module_function buggily removes them.
+Style/ModuleFunction:
+  Enabled: false
+
+Lint/ImplicitStringConcatenation:
+  Enabled: false

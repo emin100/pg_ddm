@@ -1,0 +1,142 @@
+diff --git a/Makefile b/Makefile
+index 038a834..7b6e7cc 100644
+--- a/Makefile
++++ b/Makefile
+@@ -16,6 +16,8 @@ pgbouncer_SOURCES = \
+ 	src/pktbuf.c \
+ 	src/pooler.c \
+ 	src/proto.c \
++	src/rewrite_query.c \
++    src/rubycall.c \
+ 	src/sbuf.c \
+ 	src/scram.c \
+ 	src/server.c \
+@@ -42,6 +44,8 @@ pgbouncer_SOURCES = \
+ 	include/pktbuf.h \
+ 	include/pooler.h \
+ 	include/proto.h \
++	include/rewrite_query.h \
++    include/rubycall.h \
+ 	include/sbuf.h \
+ 	include/scram.h \
+ 	include/server.h \
+@@ -58,7 +62,9 @@ pgbouncer_SOURCES = \
+ 	include/common/unicode_norm.h \
+ 	include/common/unicode_norm_table.h
+ 
+-pgbouncer_CPPFLAGS = -Iinclude $(CARES_CFLAGS) $(LIBEVENT_CFLAGS) $(TLS_CPPFLAGS)
++#pgbouncer_CPPFLAGS = -Iinclude $(CARES_CFLAGS) $(LIBEVENT_CFLAGS) $(TLS_CPPFLAGS)
++ruby_CPPFLAGS = $(shell pkg-config --cflags ruby)
++pgbouncer_CPPFLAGS = -Iinclude $(CARES_CFLAGS) $(LIBEVENT_CFLAGS) $(TLS_CPPFLAGS) $(ruby_CPPFLAGS)
+ 
+ # include libusual sources directly
+ AM_FEATURES = libusual
+@@ -94,8 +100,9 @@ LIBUSUAL_DIST = $(filter-out %/config.h, $(sort $(wildcard \
+ 		lib/README lib/COPYRIGHT \
+ 		lib/find_modules.sh )))
+ 
++ruby_LDFLAGS := $(shell pkg-config --libs ruby)
+ pgbouncer_LDFLAGS := $(TLS_LDFLAGS)
+-pgbouncer_LDADD := $(CARES_LIBS) $(LIBEVENT_LIBS) $(TLS_LIBS) $(LIBS)
++pgbouncer_LDADD := $(CARES_LIBS) $(LIBEVENT_LIBS) $(TLS_LIBS) $(LIBS) $(ruby_LDFLAGS)
+ LIBS :=
+ 
+ #
+diff --git a/etc/pgbouncer.ini b/etc/pgbouncer.ini
+index 867344b..79579aa 100644
+--- a/etc/pgbouncer.ini
++++ b/etc/pgbouncer.ini
+@@ -351,4 +351,4 @@ auth_file = /etc/pgbouncer/userlist.txt
+ ;job_name = pgbouncer
+ 
+ ;; Read additional config from other file
+-;%include /etc/pgbouncer/pgbouncer-other.ini
++%include /etc/pgbouncer/pg_ddm.ini
+diff --git a/include/bouncer.h b/include/bouncer.h
+index 45795e0..2fc5725 100644
+--- a/include/bouncer.h
++++ b/include/bouncer.h
+@@ -87,6 +87,8 @@ typedef struct ScramState ScramState;
+ 
+ extern int cf_sbuf_len;
+ 
++#include "rubycall.h"
++#include "rewrite_query.h"
+ #include "util.h"
+ #include "iobuf.h"
+ #include "sbuf.h"
+@@ -516,6 +518,12 @@ extern char *cf_server_tls_ca_file;
+ extern char *cf_server_tls_cert_file;
+ extern char *cf_server_tls_key_file;
+ extern char *cf_server_tls_ciphers;
++extern char *cf_etcd_host;
++extern char *cf_etcd_port;
++extern char *cf_etcd_user;
++extern char *cf_etcd_passwd;
++extern char *cf_user_regex;
++extern char *cf_tag_regex;
+ 
+ extern const struct CfLookup pool_mode_map[];
+ 
+diff --git a/src/client.c b/src/client.c
+index acaa9a1..e374380 100644
+--- a/src/client.c
++++ b/src/client.c
+@@ -479,10 +479,12 @@ static bool decide_startup_pool(PgSocket *client, PktHdr *pkt)
+ 		} else if (strcmp(key, "application_name") == 0) {
+ 			set_appname(client, val);
+ 			appname_found = true;
+-		} else if (varcache_set(&client->vars, key, val)) {
+-			slog_debug(client, "got var: %s=%s", key, val);
++		/*} else if (varcache_set(&client->vars, key, val)) {
++			slog_debug(client, "got var: %s=%s", key, val);*/
+ 		} else if (strlist_contains(cf_ignore_startup_params, key)) {
+ 			slog_debug(client, "ignoring startup parameter: %s=%s", key, val);
++		} else if (varcache_set(&client->vars, key, val)) {
++			slog_debug(client, "got var: %s=%s", key, val);
+ 		} else {
+ 			slog_warning(client, "unsupported startup parameter: %s=%s", key, val);
+ 			disconnect_client(client, true, "unsupported startup parameter: %s", key);
+@@ -860,6 +862,12 @@ static bool handle_client_work(PgSocket *client, PktHdr *pkt)
+ 	if (client->pool->db->admin)
+ 		return admin_handle_client(client, pkt);
+ 
++	if (pkt->type == 'Q' || pkt->type == 'P') {
++		 if (!rewrite_query(client, pkt)) {
++			return false;
++		}
++	}
++
+ 	/* acquire server */
+ 	if (!find_server(client))
+ 		return false;
+diff --git a/src/main.c b/src/main.c
+index b96f14d..37fb999 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -162,6 +162,12 @@ char *cf_server_tls_ca_file;
+ char *cf_server_tls_cert_file;
+ char *cf_server_tls_key_file;
+ char *cf_server_tls_ciphers;
++char *cf_etcd_host;
++char *cf_etcd_port;
++char *cf_etcd_user;
++char *cf_etcd_passwd;
++char *cf_user_regex;
++char *cf_tag_regex;
+ 
+ /*
+  * config file description
+@@ -297,6 +303,12 @@ CF_ABS("server_tls_cert_file", CF_STR, cf_server_tls_cert_file, CF_NO_RELOAD, ""
+ CF_ABS("server_tls_key_file", CF_STR, cf_server_tls_key_file, CF_NO_RELOAD, ""),
+ CF_ABS("server_tls_protocols", CF_STR, cf_server_tls_protocols, CF_NO_RELOAD, "all"),
+ CF_ABS("server_tls_ciphers", CF_STR, cf_server_tls_ciphers, CF_NO_RELOAD, "fast"),
++CF_ABS("etcd_host", CF_STR, cf_etcd_host, CF_NO_RELOAD, ""),
++CF_ABS("etcd_port", CF_STR, cf_etcd_port, CF_NO_RELOAD, ""),
++CF_ABS("etcd_user", CF_STR, cf_etcd_user, CF_NO_RELOAD, ""),
++CF_ABS("etcd_passwd", CF_STR, cf_etcd_passwd, CF_NO_RELOAD, ""),
++CF_ABS("user_regex", CF_STR, cf_user_regex, CF_NO_RELOAD, ""),
++CF_ABS("tag_regex", CF_STR, cf_tag_regex, CF_NO_RELOAD, ""),
+ 
+ {NULL}
+ };

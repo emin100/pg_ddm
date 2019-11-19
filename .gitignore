@@ -1,0 +1,15 @@
+.idea
+etcd/*.etcd
+etcd/Documentation
+etcd/README*
+mask_ruby/*.csv
+pgbouncer/.objs
+pgbouncer/pgbouncer*
+conf/log
+pgbouncer_mask
+*.pid
+.s.PGSQL*
+*/venv
+venv
+*.pyc
+admin/__pycache__

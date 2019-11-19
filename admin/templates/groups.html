@@ -1,0 +1,9 @@
+{% extends "list.html" %}
+{% block scripts %}
+{{ super() }}
+<script type="text/javascript">
+    $(function () {
+        $('#rule').trigger("change");
+    });
+</script>
+{% endblock %}

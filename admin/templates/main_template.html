@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="{{url_for('.static', filename='css/dashboard.css')}}">
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="{{url_for('.static', filename='js/dashboard.js')}}"></script>
+<script src="{{url_for('.static', filename='js/form.js')}}"></script>
+
+{% endblock %}
+
+{% block content %}
+
+<nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
+    <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="#">pg_ddm</a>
+    <!--<input class="form-control form-control-dark w-100" type="text" placeholder="Search" aria-label="Search">-->
+    <div class="user_menu w-100">{{ _('Hello %(user)s!',user=current_user.get_id()) }}</div>
+    <ul class="navbar-nav px-3">
+        <!--<li class="nav-item">-->
+        <!---->
+        <!--</li>-->
+        <li class="nav-item text-nowrap">
+            {% if not session.logged_in %}
+            <a class="nav-link" href="{{ url_for('login') }}">{{ _('Sign in') }}</a>
+            {% else %}
+            <a class="nav-link" href="{{ url_for('logout') }}">{{ _('Sign out') }}</a>
+            {% endif %}
+
+        </li>
+    </ul>
+</nav>
+
+
+<div class="container-fluid">
+    <div class="row">
+        <nav class="col-md-2 d-none d-md-block bg-light sidebar">
+            <div class="sidebar-sticky">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">
+                            <span data-feather="home"></span>
+                            {{ _('Dashboard') }} <span class="sr-only">(current)</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('groups') }}">
+                            <span data-feather="layers"></span>
+                            {{ _('Groups') }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('tables') }}">
+                            <span data-feather="briefcase"></span>
+                            {{ _('Tables') }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('rules') }}">
+                            <span data-feather="file"></span>
+                            {{ _('Rules') }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('passtags') }}">
+                            <span data-feather="file"></span>
+                            {{ _('Masking Pass Tags') }}
+                        </a>
+                    </li>
+                    <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                        <span>{{ _('Users') }}</span>
+                    </h6>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('dbusers') }}">
+                            <span data-feather="server"></span>
+                            {{ _('DB Users') }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('users') }}">
+                            <span data-feather="users"></span>
+                            {{ _('SQL Users') }}
+                        </a>
+                    </li>
+                     <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                        <span>{{ _('General Settings') }}</span>
+                    </h6>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('pgbouncer') }}">
+                            <span data-feather="server"></span>
+                            {{ _('PgBouncer') }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('pgddm') }}">
+                            <span data-feather="server"></span>
+                            {{ _('PgDdm') }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('user') }}">
+                            <span data-feather="server"></span>
+                            {{ _('Admin User') }}
+                        </a>
+                    </li>
+                    <!--<li class="nav-item">-->
+                        <!--<a class="nav-link" href="#">-->
+                            <!--<span data-feather="bar-chart-2"></span>-->
+                            <!--Reports-->
+                        <!--</a>-->
+                    <!--</li>-->
+                </ul>
+            </div>
+        </nav>
+
+        <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
+            {%- with messages = get_flashed_messages(with_categories=True) %}
+            {%- if messages %}
+            {{utils.flashed_messages(messages)}}
+            {%- endif %}
+            {%- endwith %}
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">
+                    {% block main_header %}
+                    {% endblock %}
+                </h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group mr-2">
+                        {% block button_list %}
+
+                        {% endblock %}
+                    </div>
+                </div>
+            </div>
+
+            {% block in_page %}
+            {% endblock %}
+        </main>
+    </div>
+</div>
+{% endblock %}
