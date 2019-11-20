@@ -26,6 +26,8 @@ RUN wget https://github.com/jgm/pandoc/releases/download/2.7.2/pandoc-2.7.2-1-am
 RUN dpkg -i  pandoc-2.7.2-1-amd64.deb
 RUN rm -rf pandoc-2.7.2-1-amd64.deb
 
+RUN ln -s `which python3` /usr/bin/python
+
 # Note: The official Debian and Ubuntu images automatically ``apt-get clean``
 # after each ``apt-get``
 
@@ -50,21 +52,18 @@ RUN echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/11/main/pg_hba.con
 RUN echo "listen_addresses='*'" >> /etc/postgresql/11/main/postgresql.conf
 
 
+USER root
+RUN mkdir /etc/pgbouncer
 
 
 ADD tools/install.sh /usr/bin/
 RUN /usr/bin/install.sh /var/lib/postgresql
 
-USER root
-RUN cp /var/lib/postgresql/pg_ddm/pg_ddm /usr/bin/
-RUN mkdir /etc/pgbouncer
-ADD conf/pgbouncer.ini conf/userlist.txt /etc/pgbouncer/
+RUN chown -R postgres:postgres /etc/pgbouncer
+RUN cp /var/lib/postgresql/pg_ddm/pgbouncer/pgbouncer /usr/bin/
 
-ADD mask_ruby/parser.rb /etc/pgbouncer/mask_ruby/parser.rb
-ADD mask_ruby/import.rb /etc/pgbouncer/mask_ruby/import.rb
-ADD mask_ruby/mask.sql /etc/pgbouncer/mask_ruby/mask.sql
+
 ADD tools/control-change.sh /usr/bin/
-COPY ["admin", "/etc/pgbouncer/admin"]
 
 
 
@@ -73,8 +72,6 @@ RUN mkdir /var/run/pgbouncer && chown postgres:postgres /var/run/pgbouncer
 RUN mkdir /var/log/pgbouncer && chown postgres:postgres /var/log/pgbouncer
 
 
-RUN gem install hashie etcdv3
-RUN gem install /var/lib/postgresql/pg_ddm/pg_query/pg_query*.gem
 
 
 WORKDIR /etc/pgbouncer

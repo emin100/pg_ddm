@@ -5,8 +5,9 @@ service etcd start
 service postgresql start
 
 #su postgres -c 'pgbouncer -d /etc/pgbouncer/pgbouncer.ini'
-cd /etc/pgbouncer/admin
+cd /etc/pgbouncer/
 source venv/bin/activate
+cd admin
 
 if [[ -f "/etc/pgbouncer/mask_ruby/import.rb" ]]; then
 
@@ -21,5 +22,5 @@ if [[ -f "/etc/pgbouncer/mask_ruby/mask.sql" ]]; then
 fi
 
 python3 app.py &
-su postgres -c 'pg_ddm /etc/pgbouncer/pgbouncer.ini'
+su postgres -c 'pgbouncer /etc/pgbouncer/pgbouncer.ini'
 exit
