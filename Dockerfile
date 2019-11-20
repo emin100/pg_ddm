@@ -59,16 +59,10 @@ RUN mkdir /etc/pgbouncer
 ADD tools/install.sh /usr/bin/
 RUN /usr/bin/install.sh /var/lib/postgresql
 
-RUN chown -R postgres:postgres /etc/pgbouncer
-RUN cp /var/lib/postgresql/pg_ddm/pgbouncer/pgbouncer /usr/bin/
-
-
 ADD tools/control-change.sh /usr/bin/
 
-
-
+RUN chown -R postgres:postgres /etc/pgbouncer
 RUN mkdir /var/run/pgbouncer && chown postgres:postgres /var/run/pgbouncer
-
 RUN mkdir /var/log/pgbouncer && chown postgres:postgres /var/log/pgbouncer
 
 

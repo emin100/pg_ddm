@@ -26,19 +26,17 @@ cp -R ${PgDdmPath}/pgbouncer_diff/* ${PgDdmPath}/pgbouncer/
 cd ${PgDdmPath}/pgbouncer
 git apply pg_ddm.patch
 
-
-#git submodule init
-#git submodule update
 ./autogen.sh
 ./configure
 make
 
-#mv pgbouncer ../pg_ddm
+cp ${PgDdmPath}/pgbouncer/pgbouncer /usr/bin/
+
 
 cd ${PgDdmPath}/pg_query
 gem build pg_query.gemspec
-#gem install hashie etcdv3
-#gem install pg_query*.gem
+gem install hashie etcdv3
+gem install pg_query*.gem
 
 
 cd ${PgDdmPath}
