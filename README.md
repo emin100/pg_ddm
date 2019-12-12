@@ -50,7 +50,7 @@
  
     cd ../pg_query
     gem build pg_query.gemspec 
-    sudo gem install pg_query-1.2.0.gem
+    sudo gem install pg_query-*.gem
     sudo gem install hashie etcdv3
     
     

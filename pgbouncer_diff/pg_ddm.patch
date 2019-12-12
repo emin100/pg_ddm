@@ -1,7 +1,19 @@
 diff --git a/Makefile b/Makefile
-index 038a834..7b6e7cc 100644
+index 7a07e11..92943cd 100644
 --- a/Makefile
 +++ b/Makefile
+@@ -1,9 +1,9 @@
+ 
+ include config.mak
+ 
+-bin_PROGRAMS = pgbouncer
++bin_PROGRAMS = pgddm
+ 
+-pgbouncer_SOURCES = \
++pgddm_SOURCES = \
+ 	src/admin.c \
+ 	src/client.c \
+ 	src/dnslookup.c \
 @@ -16,6 +16,8 @@ pgbouncer_SOURCES = \
  	src/pktbuf.c \
  	src/pooler.c \
@@ -20,38 +32,194 @@ index 038a834..7b6e7cc 100644
  	include/sbuf.h \
  	include/scram.h \
  	include/server.h \
-@@ -58,7 +62,9 @@ pgbouncer_SOURCES = \
+@@ -58,11 +62,13 @@ pgbouncer_SOURCES = \
  	include/common/unicode_norm.h \
  	include/common/unicode_norm_table.h
  
 -pgbouncer_CPPFLAGS = -Iinclude $(CARES_CFLAGS) $(LIBEVENT_CFLAGS) $(TLS_CPPFLAGS)
 +#pgbouncer_CPPFLAGS = -Iinclude $(CARES_CFLAGS) $(LIBEVENT_CFLAGS) $(TLS_CPPFLAGS)
 +ruby_CPPFLAGS = $(shell pkg-config --cflags ruby)
-+pgbouncer_CPPFLAGS = -Iinclude $(CARES_CFLAGS) $(LIBEVENT_CFLAGS) $(TLS_CPPFLAGS) $(ruby_CPPFLAGS)
++pgddm_CPPFLAGS = -Iinclude $(CARES_CFLAGS) $(LIBEVENT_CFLAGS) $(TLS_CPPFLAGS) $(ruby_CPPFLAGS)
  
  # include libusual sources directly
  AM_FEATURES = libusual
-@@ -94,8 +100,9 @@ LIBUSUAL_DIST = $(filter-out %/config.h, $(sort $(wildcard \
+-pgbouncer_EMBED_LIBUSUAL = 1
++pgddm_EMBED_LIBUSUAL = 1
+ 
+ # docs to install as-is
+ dist_doc_DATA = README.md NEWS.md etc/pgbouncer.ini etc/userlist.txt
+@@ -70,7 +76,7 @@ dist_doc_DATA = README.md NEWS.md etc/pgbouncer.ini etc/userlist.txt
+ DISTCLEANFILES = config.mak config.status lib/usual/config.h config.log
+ 
+ DIST_SUBDIRS = doc test
+-dist_man_MANS = doc/pgbouncer.1 doc/pgbouncer.5
++dist_man_MANS = doc/pgddm.1 doc/pgddm.5
+ 
+ # files in tgz
+ EXTRA_DIST = AUTHORS COPYRIGHT Makefile config.mak.in config.sub config.guess \
+@@ -94,19 +100,20 @@ LIBUSUAL_DIST = $(filter-out %/config.h, $(sort $(wildcard \
  		lib/README lib/COPYRIGHT \
  		lib/find_modules.sh )))
  
-+ruby_LDFLAGS := $(shell pkg-config --libs ruby)
- pgbouncer_LDFLAGS := $(TLS_LDFLAGS)
+-pgbouncer_LDFLAGS := $(TLS_LDFLAGS)
 -pgbouncer_LDADD := $(CARES_LIBS) $(LIBEVENT_LIBS) $(TLS_LIBS) $(LIBS)
-+pgbouncer_LDADD := $(CARES_LIBS) $(LIBEVENT_LIBS) $(TLS_LIBS) $(LIBS) $(ruby_LDFLAGS)
++ruby_LDFLAGS := $(shell pkg-config --libs ruby)
++pgddm_LDFLAGS := $(TLS_LDFLAGS)
++pgddm_LDADD := $(CARES_LIBS) $(LIBEVENT_LIBS) $(TLS_LIBS) $(LIBS) $(ruby_LDFLAGS)
  LIBS :=
  
  #
+ # win32
+ #
+ 
+-EXTRA_pgbouncer_SOURCES = win32/win32support.c win32/win32support.h
++EXTRA_pgddm_SOURCES = win32/win32support.c win32/win32support.h
+ EXTRA_PROGRAMS = pgbevent
+ ifeq ($(PORTNAME),win32)
+-pgbouncer_CPPFLAGS += -Iwin32
+-pgbouncer_SOURCES += $(EXTRA_pgbouncer_SOURCES)
++pgddm_CPPFLAGS += -Iwin32
++pgddm_SOURCES += $(EXTRA_pgddm_SOURCES)
+ bin_PROGRAMS += pgbevent
+ endif
+ 
+@@ -146,7 +153,7 @@ debian/changelog: NEWS.md
+ 	echo >>$@
+ 	echo '  * v$(PACKAGE_VERSION)' >>$@
+ 	echo >>$@
+-	printf ' -- PgBouncer developers <noreply@localhost>  ' >>$@
++	printf ' -- pgddm developers <noreply@localhost>  ' >>$@
+ 	date -u -R -d `sed -E -n '/^\*\*/ { s/^.*([0-9]{4}-[0-9]{2}-[0-9]{2}).*/\1/;p;q }' $<` >>$@
+ 
+ w32arch = i686-w64-mingw32
+@@ -160,17 +167,17 @@ zip: configure clean
+ 			--without-cares \
+ 			--enable-evdns \
+ 		&& make \
+-		&& $(w32arch)-strip pgbouncer.exe pgbevent.dll \
+-		&& zip pgbouncer.zip pgbouncer.exe pgbevent.dll doc/*.html
+-	zip -l buildexe/pgbouncer.zip etc/pgbouncer.ini etc/userlist.txt
+-	mv buildexe/pgbouncer.zip $(w32zip)
++		&& $(w32arch)-strip pgddm.exe pgbevent.dll \
++		&& zip pgddm.zip pgddm.exe pgbevent.dll doc/*.html
++	zip -l buildexe/pgddm.zip etc/pgbouncer.ini etc/userlist.txt
++	mv buildexe/pgddm.zip $(w32zip)
+ 
+ zip-up: $(w32zip)
+-	rsync $(w32zip) pgf:web/pgbouncer/htdocs/win32/
++	rsync $(w32zip) pgf:web/pgddm/htdocs/win32/
+ 
+ tgz = $(PACKAGE_TARNAME)-$(PACKAGE_VERSION).tar.gz
+ tgz-up: $(tgz)
+-	rsync $(tgz) pgf:web/pgbouncer/htdocs/testing/
++	rsync $(tgz) pgf:web/pgddm/htdocs/testing/
+ 
+ .PHONY: tags
+ tags:
+@@ -181,5 +188,5 @@ htmls:
+ 		mkdir -p html && $(PANDOC) $$f -o html/`basename $$f`.html; \
+ 	done
+ 
+-doc/pgbouncer.1 doc/pgbouncer.5:
++doc/pgddm.1 doc/pgddm.5:
+ 	$(MAKE) -C doc
+diff --git a/configure.ac b/configure.ac
+index 10a8466..d59fa6e 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -1,6 +1,6 @@
+ dnl Process this file with autoconf to produce a configure script.
+ 
+-AC_INIT([PgBouncer],
++AC_INIT([PgDdm],
+         [1.12.0],
+         [https://github.com/pgbouncer/pgbouncer/issues], [],
+         [https://www.pgbouncer.org/])
+diff --git a/doc/Makefile b/doc/Makefile
+index 049f636..dd5dff8 100644
+--- a/doc/Makefile
++++ b/doc/Makefile
+@@ -1,6 +1,6 @@
+ -include ../config.mak
+ 
+-manpages = pgbouncer.1 pgbouncer.5
++manpages = pgddm.1 pgddm.5
+ 
+ dist_man_MANS = $(manpages)
+ 
+@@ -8,7 +8,7 @@ EXTRA_DIST = config.md usage.md Makefile $(manpages) \
+ 	     frag-config-man.md frag-usage-man.md \
+ 	     filter.py
+ 
+-CLEANFILES = pgbouncer_1.md pgbouncer_5.md
++CLEANFILES = pgddm_1.md pgddm_5.md
+ 
+ # make maintainer-clean removes those
+ MAINTAINERCLEANFILES = $(manpages)
+@@ -19,16 +19,16 @@ include $(abs_top_srcdir)/lib/mk/antimake.mk
+ 
+ export PACKAGE_VERSION
+ 
+-pgbouncer.%: pgbouncer_%.md
++pgddm.%: pgddm_%.md
+ 	$(PANDOC) -s -t man -o $@ $<
+ 
+-pgbouncer_1.md: filter.py frag-usage-man.md usage.md
++pgddm_1.md: filter.py frag-usage-man.md usage.md
+ 	$(PYTHON) $^ >$@
+ 
+-pgbouncer_5.md: filter.py frag-config-man.md config.md
++pgddm_5.md: filter.py frag-config-man.md config.md
+ 	$(PYTHON) $^ >$@
+ 
+-.INTERMEDIATE: pgbouncer_1.md pgbouncer_5.md
++.INTERMEDIATE: pgddm_1.md pgddm_5.md
+ 
+ web:
+-	make -C ../../pgbouncer.github.io
++	make -C ../../pgddm.github.io
 diff --git a/etc/pgbouncer.ini b/etc/pgbouncer.ini
-index 867344b..79579aa 100644
+index 3ca3337..2c76a14 100644
 --- a/etc/pgbouncer.ini
 +++ b/etc/pgbouncer.ini
-@@ -351,4 +351,4 @@ auth_file = /etc/pgbouncer/userlist.txt
- ;job_name = pgbouncer
+@@ -38,6 +38,19 @@
+ ;; Configuration section
+ [pgbouncer]
  
- ;; Read additional config from other file
--;%include /etc/pgbouncer/pgbouncer-other.ini
-+%include /etc/pgbouncer/pg_ddm.ini
++;;;
++;;; Pg_ddm settings
++;;;
++
++;; Etcd settings
++etcd_host = localhost
++etcd_port = 2379
++; etcd_user = root
++etcd_passwd = 1234
++user_regex = \/\*.*user_id=([0-9]*)
++tag_regex = \/\*.*pass_tag=([0-9A-z]*)
++
++
+ ;;;
+ ;;; Administrative settings
+ ;;;
+@@ -51,7 +64,7 @@ pidfile = /var/run/pgbouncer/pgbouncer.pid
+ 
+ ;; IP address or * which means all IPs
+ listen_addr = 127.0.0.1
+-listen_port = 6432
++listen_port = 15432
+ 
+ ;; Unix socket is also used for -R.
+ ;; On Debian it should be /var/run/postgresql
+@@ -280,7 +293,7 @@ auth_file = /etc/pgbouncer/userlist.txt
+ ;;;
+ 
+ ;; buffer for streaming packets
+-;pkt_buf = 4096
++pkt_buf = 50000
+ 
+ ;; man 2 listen
+ ;listen_backlog = 128
 diff --git a/include/bouncer.h b/include/bouncer.h
 index 45795e0..2fc5725 100644
 --- a/include/bouncer.h
@@ -111,10 +279,10 @@ index acaa9a1..e374380 100644
  	if (!find_server(client))
  		return false;
 diff --git a/src/main.c b/src/main.c
-index b96f14d..37fb999 100644
+index e7e63d6..3c3385c 100644
 --- a/src/main.c
 +++ b/src/main.c
-@@ -162,6 +162,12 @@ char *cf_server_tls_ca_file;
+@@ -165,6 +165,12 @@ char *cf_server_tls_ca_file;
  char *cf_server_tls_cert_file;
  char *cf_server_tls_key_file;
  char *cf_server_tls_ciphers;
@@ -127,16 +295,17 @@ index b96f14d..37fb999 100644
  
  /*
   * config file description
-@@ -297,6 +303,12 @@ CF_ABS("server_tls_cert_file", CF_STR, cf_server_tls_cert_file, CF_NO_RELOAD, ""
- CF_ABS("server_tls_key_file", CF_STR, cf_server_tls_key_file, CF_NO_RELOAD, ""),
- CF_ABS("server_tls_protocols", CF_STR, cf_server_tls_protocols, CF_NO_RELOAD, "all"),
+@@ -301,6 +307,13 @@ CF_ABS("server_tls_key_file", CF_STR, cf_server_tls_key_file, CF_NO_RELOAD, ""),
+ CF_ABS("server_tls_protocols", CF_STR, cf_server_tls_protocols, CF_NO_RELOAD, "secure"),
  CF_ABS("server_tls_ciphers", CF_STR, cf_server_tls_ciphers, CF_NO_RELOAD, "fast"),
+ 
 +CF_ABS("etcd_host", CF_STR, cf_etcd_host, CF_NO_RELOAD, ""),
 +CF_ABS("etcd_port", CF_STR, cf_etcd_port, CF_NO_RELOAD, ""),
 +CF_ABS("etcd_user", CF_STR, cf_etcd_user, CF_NO_RELOAD, ""),
 +CF_ABS("etcd_passwd", CF_STR, cf_etcd_passwd, CF_NO_RELOAD, ""),
 +CF_ABS("user_regex", CF_STR, cf_user_regex, CF_NO_RELOAD, ""),
 +CF_ABS("tag_regex", CF_STR, cf_tag_regex, CF_NO_RELOAD, ""),
- 
++
  {NULL}
  };
+ 
