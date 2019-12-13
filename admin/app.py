@@ -14,8 +14,7 @@ import uuid
 
 babel = Babel()
 login_manager = LoginManager()
-config_filepath = '/etc/pgbouncer/pgbouncer.ini'
-config_ddm_filepath = '/etc/pgbouncer/pg_ddm.ini'
+config_filepath = '/etc/pg_ddm/pg_ddm.ini'
 
 config = configparser.RawConfigParser(allow_no_value=True)
 config.read(config_filepath)
@@ -533,53 +532,42 @@ def passtags(url_type=None):
                                  button_list=button_list, links=links)
 
 
-@app.route('/pgddm', methods=['GET', 'POST'])
+@app.route('/sqlfilter', methods=['GET', 'POST'])
+@app.route('/sqlfilter/<url_type>', methods=['GET', 'POST'])
 @login_required
-def pgddm():
-    from wtforms import StringField
-    from wtforms import Label
+def sqlfilter(url_type=None):
+    etcd_conn = Etcd()
+    button_list = [{'name': _('New'), 'href': '/sqlfilter/change'}, {'name': _('List'), 'href': '/sqlfilter'}]
+    if url_type == 'change':
+        form = forms.SQLFilterForm()
+        if form.validate_on_submit():
+            enabled = 'false'
+            if form.enabled.data:
+                enabled = 'true'
+            etcd_conn.put('/sqlfilter/' + form.table.data.replace('.', '/'),
+                          '{"filter":"' + form.filter.data + '", "enabled": "'+enabled+'"}')
+            flash(_('SQL Filter') + ' ' + _('Added'), 'info')
+            return flask.redirect(flask.url_for('sqlfilter'))
+        elif flask.request.args.get('key'):
+            form_data = etcd_conn.get_list(flask.request.args.get('key'))
+            form.enabled.data = False
+            if form_data.get('enabled') == 'true':
+                form.enabled.data = True
+            form.filter.data = form_data.get('filter')
+            form.table.data = flask.request.args.get('key').replace('/sqlfilter/', '').replace('/', '.')
+            form.table.render_kw = {'readonly': True}
+        return flask.render_template('list.html', main_header=_('Rules'), form=form, button_list=button_list)
+    elif url_type == 'delete':
+        etcd_conn.delete(flask.request.args.get('key'))
+        flash(_('SQL Filter') + ' ' + _('Deleted'), 'error')
 
-    form_obj = []
+    group_list = etcd_conn.search('/sqlfilter/')
+    headers = [_('Table'), _('SQL Filter'), _('Enabled')]
+    links = [{'name': _('Delete'), 'type': 'danger', 'link': '/sqlfilter/delete'},
+             {'name': _('Update'), 'type': 'info', 'link': '/sqlfilter/change'}]
 
-    with open(config_ddm_filepath) as fp:
-        line = fp.readline()
-        cnt = 1
-        text = ''
-        write = 0
-        while line:
-            # print("Line {}: {}".format(cnt, line.strip()))
-            line = fp.readline()
-            if line[0:3] == ';;;':
-                # setattr(forms.PgBouncerForm, line[3:].replace(' ','_'), Label(line[3:].replace(' ','_'), line[3:]))
-
-                # text += '<h3>' + line[3:] + '<hr></h3>'
-                pass
-            elif line[0:2] == ';;':
-                text += line[2:]
-            elif line[0:1] == ';':
-                parsed = line[1:].split('=')
-                text += '(' + _('Closed in config file') + ')'
-                # print(parsed)
-                if len(parsed) > 1:
-                    form_obj.append(parsed[0].strip())
-                    setattr(forms.PgBouncerForm, parsed[0].strip(),
-                            StringField(parsed[0].strip(), default=parsed[1].strip(), description=text))
-                text = ''
-            elif len(line.strip('\n')) > 0:
-                parsed = line.strip('\n').split("=")
-                form_obj.append(parsed[0].strip())
-                setattr(forms.PgBouncerForm, parsed[0].strip(),
-                        StringField(parsed[0].strip(), default=('='.join(parsed[1:])).strip(), description=text))
-                text = ''
-
-            cnt += 1
-
-    form = forms.PgBouncerForm()
-
-    for i in form_obj:
-        delattr(forms.PgBouncerForm, i)
-
-    return flask.render_template('list.html', main_header=_('PgDdm Config'), form=form)
+    return flask.render_template('list.html', main_header=_('SQL Filter'), list=group_list, headers=headers,
+                                 button_list=button_list, links=links)
 
 
 app.run(debug=True, host="0.0.0.0", port=25432)

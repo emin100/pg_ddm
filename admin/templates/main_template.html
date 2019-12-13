@@ -70,6 +70,12 @@
                             {{ _('Masking Pass Tags') }}
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('sqlfilter') }}">
+                            <span data-feather="file"></span>
+                            {{ _('SQL Filter') }}
+                        </a>
+                    </li>
                     <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
                         <span>{{ _('Users') }}</span>
                     </h6>
@@ -92,12 +98,6 @@
                         <a class="nav-link" href="{{ url_for('pgbouncer') }}">
                             <span data-feather="server"></span>
                             {{ _('PgBouncer') }}
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('pgddm') }}">
-                            <span data-feather="server"></span>
-                            {{ _('PgDdm') }}
                         </a>
                     </li>
                     <li class="nav-item">

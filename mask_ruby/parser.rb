@@ -76,6 +76,7 @@ class PgQueryOpt
 
       resolve_stars
       check_rules
+      add_filter
       return_sql = @query_parser.deparse
 
       @query_tree = @query_parser.tree
@@ -87,6 +88,8 @@ class PgQueryOpt
 
       return_sql = get_subsql('subquery', return_sql)
 
+      puts @tag_sql + return_sql
+
       return @tag_sql + return_sql
     rescue => e
       puts e
@@ -95,6 +98,23 @@ class PgQueryOpt
     end
 
 
+  end
+
+  def add_filter
+    etcd_key = ''
+    @query_parser.tables.each do |col|
+      etcd_key = if col.include? '.'
+                   col.gsub('.', '/')
+                 else
+                   'ktv/' + col
+                 end
+      etcd_key = '/sqlfilter/ktv_test/' + etcd_key
+      filter = @etcd.get(etcd_key)
+
+      puts JSON.parse(filter.kvs.first.value)
+    end
+
+    return ''
   end
 
   def check_rules
@@ -228,11 +248,11 @@ class PgQueryOpt
 
   def conn_etcd
     if @etcd.nil?
-      if @etcd_user.empty?
-        @etcd = Etcdv3.new(endpoints: 'http://' + @etcd_host + ':' + @etcd_port, command_timeout: 5)
-      else
-        @etcd = Etcdv3.new(endpoints: 'http://' + @etcd_host + ':' + @etcd_port, command_timeout: 5, user: @etcd_user, password: @etcd_passwd)
-      end
+      @etcd = if @etcd_user.empty?
+                Etcdv3.new(endpoints: 'http://' + @etcd_host + ':' + @etcd_port, command_timeout: 5)
+              else
+                Etcdv3.new(endpoints: 'http://' + @etcd_host + ':' + @etcd_port, command_timeout: 5, user: @etcd_user, password: @etcd_passwd)
+              end
     end
   end
 
@@ -273,11 +293,11 @@ class PgQueryOpt
   end
 
   def get_column_list
-    if @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt'].nil?
-      list = []
-    else
-      list = @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt']['targetList']
-    end
+    list = if @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt'].nil?
+             []
+           else
+             @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt']['targetList']
+           end
     list
   end
 
@@ -354,11 +374,11 @@ class PgQueryOpt
                 last_add = false
                 table_list.each do |val|
                   table = @query_parser.aliases.detect {|f, value| value == val}
-                  if table.nil?
-                    table_alias = val
-                  else
-                    table_alias = table[0]
-                  end
+                  table_alias = if table.nil?
+                                  val
+                                else
+                                  table[0]
+                                end
                   col_names = get_col_list_in_etcd(change_col_names_for_etcd(val), table_alias, col_alias)
 
                   if col_names.nil? or col_names.count == 0

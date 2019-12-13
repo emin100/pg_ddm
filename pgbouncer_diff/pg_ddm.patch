@@ -1,5 +1,5 @@
 diff --git a/Makefile b/Makefile
-index 7a07e11..92943cd 100644
+index 7a07e11..83b3e41 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -1,9 +1,9 @@
@@ -7,10 +7,10 @@ index 7a07e11..92943cd 100644
  include config.mak
  
 -bin_PROGRAMS = pgbouncer
-+bin_PROGRAMS = pgddm
++bin_PROGRAMS = pg_ddm
  
 -pgbouncer_SOURCES = \
-+pgddm_SOURCES = \
++pg_ddm_SOURCES = \
  	src/admin.c \
  	src/client.c \
  	src/dnslookup.c \
@@ -32,28 +32,29 @@ index 7a07e11..92943cd 100644
  	include/sbuf.h \
  	include/scram.h \
  	include/server.h \
-@@ -58,11 +62,13 @@ pgbouncer_SOURCES = \
+@@ -58,19 +62,21 @@ pgbouncer_SOURCES = \
  	include/common/unicode_norm.h \
  	include/common/unicode_norm_table.h
  
 -pgbouncer_CPPFLAGS = -Iinclude $(CARES_CFLAGS) $(LIBEVENT_CFLAGS) $(TLS_CPPFLAGS)
 +#pgbouncer_CPPFLAGS = -Iinclude $(CARES_CFLAGS) $(LIBEVENT_CFLAGS) $(TLS_CPPFLAGS)
 +ruby_CPPFLAGS = $(shell pkg-config --cflags ruby)
-+pgddm_CPPFLAGS = -Iinclude $(CARES_CFLAGS) $(LIBEVENT_CFLAGS) $(TLS_CPPFLAGS) $(ruby_CPPFLAGS)
++pg_ddm_CPPFLAGS = -Iinclude $(CARES_CFLAGS) $(LIBEVENT_CFLAGS) $(TLS_CPPFLAGS) $(ruby_CPPFLAGS)
  
  # include libusual sources directly
  AM_FEATURES = libusual
 -pgbouncer_EMBED_LIBUSUAL = 1
-+pgddm_EMBED_LIBUSUAL = 1
++pg_ddm_EMBED_LIBUSUAL = 1
  
  # docs to install as-is
- dist_doc_DATA = README.md NEWS.md etc/pgbouncer.ini etc/userlist.txt
-@@ -70,7 +76,7 @@ dist_doc_DATA = README.md NEWS.md etc/pgbouncer.ini etc/userlist.txt
+-dist_doc_DATA = README.md NEWS.md etc/pgbouncer.ini etc/userlist.txt
++dist_doc_DATA = README.md NEWS.md etc/pg_ddm.ini etc/userlist.txt
+ 
  DISTCLEANFILES = config.mak config.status lib/usual/config.h config.log
  
  DIST_SUBDIRS = doc test
 -dist_man_MANS = doc/pgbouncer.1 doc/pgbouncer.5
-+dist_man_MANS = doc/pgddm.1 doc/pgddm.5
++dist_man_MANS = doc/pg_ddm.1 doc/pg_ddm.5
  
  # files in tgz
  EXTRA_DIST = AUTHORS COPYRIGHT Makefile config.mak.in config.sub config.guess \
@@ -64,8 +65,8 @@ index 7a07e11..92943cd 100644
 -pgbouncer_LDFLAGS := $(TLS_LDFLAGS)
 -pgbouncer_LDADD := $(CARES_LIBS) $(LIBEVENT_LIBS) $(TLS_LIBS) $(LIBS)
 +ruby_LDFLAGS := $(shell pkg-config --libs ruby)
-+pgddm_LDFLAGS := $(TLS_LDFLAGS)
-+pgddm_LDADD := $(CARES_LIBS) $(LIBEVENT_LIBS) $(TLS_LIBS) $(LIBS) $(ruby_LDFLAGS)
++pg_ddm_LDFLAGS := $(TLS_LDFLAGS)
++pg_ddm_LDADD := $(CARES_LIBS) $(LIBEVENT_LIBS) $(TLS_LIBS) $(LIBS) $(ruby_LDFLAGS)
  LIBS :=
  
  #
@@ -73,13 +74,13 @@ index 7a07e11..92943cd 100644
  #
  
 -EXTRA_pgbouncer_SOURCES = win32/win32support.c win32/win32support.h
-+EXTRA_pgddm_SOURCES = win32/win32support.c win32/win32support.h
++EXTRA_pg_ddm_SOURCES = win32/win32support.c win32/win32support.h
  EXTRA_PROGRAMS = pgbevent
  ifeq ($(PORTNAME),win32)
 -pgbouncer_CPPFLAGS += -Iwin32
 -pgbouncer_SOURCES += $(EXTRA_pgbouncer_SOURCES)
-+pgddm_CPPFLAGS += -Iwin32
-+pgddm_SOURCES += $(EXTRA_pgddm_SOURCES)
++pg_ddm_CPPFLAGS += -Iwin32
++pg_ddm_SOURCES += $(EXTRA_pg_ddm_SOURCES)
  bin_PROGRAMS += pgbevent
  endif
  
@@ -88,7 +89,7 @@ index 7a07e11..92943cd 100644
  	echo '  * v$(PACKAGE_VERSION)' >>$@
  	echo >>$@
 -	printf ' -- PgBouncer developers <noreply@localhost>  ' >>$@
-+	printf ' -- pgddm developers <noreply@localhost>  ' >>$@
++	printf ' -- pg_ddm developers <noreply@localhost>  ' >>$@
  	date -u -R -d `sed -E -n '/^\*\*/ { s/^.*([0-9]{4}-[0-9]{2}-[0-9]{2}).*/\1/;p;q }' $<` >>$@
  
  w32arch = i686-w64-mingw32
@@ -100,19 +101,19 @@ index 7a07e11..92943cd 100644
 -		&& zip pgbouncer.zip pgbouncer.exe pgbevent.dll doc/*.html
 -	zip -l buildexe/pgbouncer.zip etc/pgbouncer.ini etc/userlist.txt
 -	mv buildexe/pgbouncer.zip $(w32zip)
-+		&& $(w32arch)-strip pgddm.exe pgbevent.dll \
-+		&& zip pgddm.zip pgddm.exe pgbevent.dll doc/*.html
-+	zip -l buildexe/pgddm.zip etc/pgbouncer.ini etc/userlist.txt
-+	mv buildexe/pgddm.zip $(w32zip)
++		&& $(w32arch)-strip pg_ddm.exe pgbevent.dll \
++		&& zip pg_ddm.zip pg_ddm.exe pgbevent.dll doc/*.html
++	zip -l buildexe/pg_ddm.zip etc/pg_ddm.ini etc/userlist.txt
++	mv buildexe/pg_ddm.zip $(w32zip)
  
  zip-up: $(w32zip)
 -	rsync $(w32zip) pgf:web/pgbouncer/htdocs/win32/
-+	rsync $(w32zip) pgf:web/pgddm/htdocs/win32/
++	rsync $(w32zip) pgf:web/pg_ddm/htdocs/win32/
  
  tgz = $(PACKAGE_TARNAME)-$(PACKAGE_VERSION).tar.gz
  tgz-up: $(tgz)
 -	rsync $(tgz) pgf:web/pgbouncer/htdocs/testing/
-+	rsync $(tgz) pgf:web/pgddm/htdocs/testing/
++	rsync $(tgz) pgf:web/pg_ddm/htdocs/testing/
  
  .PHONY: tags
  tags:
@@ -121,29 +122,29 @@ index 7a07e11..92943cd 100644
  	done
  
 -doc/pgbouncer.1 doc/pgbouncer.5:
-+doc/pgddm.1 doc/pgddm.5:
++doc/pg_ddm.1 doc/pg_ddm.5:
  	$(MAKE) -C doc
 diff --git a/configure.ac b/configure.ac
-index 10a8466..d59fa6e 100644
+index 10a8466..cc3a743 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -1,6 +1,6 @@
  dnl Process this file with autoconf to produce a configure script.
  
 -AC_INIT([PgBouncer],
-+AC_INIT([PgDdm],
++AC_INIT([Pg_Ddm],
          [1.12.0],
          [https://github.com/pgbouncer/pgbouncer/issues], [],
          [https://www.pgbouncer.org/])
 diff --git a/doc/Makefile b/doc/Makefile
-index 049f636..dd5dff8 100644
+index 049f636..ab9ff63 100644
 --- a/doc/Makefile
 +++ b/doc/Makefile
 @@ -1,6 +1,6 @@
  -include ../config.mak
  
 -manpages = pgbouncer.1 pgbouncer.5
-+manpages = pgddm.1 pgddm.5
++manpages = pg_ddm.1 pg_ddm.5
  
  dist_man_MANS = $(manpages)
  
@@ -152,7 +153,7 @@ index 049f636..dd5dff8 100644
  	     filter.py
  
 -CLEANFILES = pgbouncer_1.md pgbouncer_5.md
-+CLEANFILES = pgddm_1.md pgddm_5.md
++CLEANFILES = pg_ddm_1.md pg_ddm_5.md
  
  # make maintainer-clean removes those
  MAINTAINERCLEANFILES = $(manpages)
@@ -161,65 +162,23 @@ index 049f636..dd5dff8 100644
  export PACKAGE_VERSION
  
 -pgbouncer.%: pgbouncer_%.md
-+pgddm.%: pgddm_%.md
++pg_ddm.%: pg_ddm_%.md
  	$(PANDOC) -s -t man -o $@ $<
  
 -pgbouncer_1.md: filter.py frag-usage-man.md usage.md
-+pgddm_1.md: filter.py frag-usage-man.md usage.md
++pg_ddm_1.md: filter.py frag-usage-man.md usage.md
  	$(PYTHON) $^ >$@
  
 -pgbouncer_5.md: filter.py frag-config-man.md config.md
-+pgddm_5.md: filter.py frag-config-man.md config.md
++pg_ddm_5.md: filter.py frag-config-man.md config.md
  	$(PYTHON) $^ >$@
  
 -.INTERMEDIATE: pgbouncer_1.md pgbouncer_5.md
-+.INTERMEDIATE: pgddm_1.md pgddm_5.md
++.INTERMEDIATE: pg_ddm_1.md pg_ddm_5.md
  
  web:
 -	make -C ../../pgbouncer.github.io
-+	make -C ../../pgddm.github.io
-diff --git a/etc/pgbouncer.ini b/etc/pgbouncer.ini
-index 3ca3337..2c76a14 100644
---- a/etc/pgbouncer.ini
-+++ b/etc/pgbouncer.ini
-@@ -38,6 +38,19 @@
- ;; Configuration section
- [pgbouncer]
- 
-+;;;
-+;;; Pg_ddm settings
-+;;;
-+
-+;; Etcd settings
-+etcd_host = localhost
-+etcd_port = 2379
-+; etcd_user = root
-+etcd_passwd = 1234
-+user_regex = \/\*.*user_id=([0-9]*)
-+tag_regex = \/\*.*pass_tag=([0-9A-z]*)
-+
-+
- ;;;
- ;;; Administrative settings
- ;;;
-@@ -51,7 +64,7 @@ pidfile = /var/run/pgbouncer/pgbouncer.pid
- 
- ;; IP address or * which means all IPs
- listen_addr = 127.0.0.1
--listen_port = 6432
-+listen_port = 15432
- 
- ;; Unix socket is also used for -R.
- ;; On Debian it should be /var/run/postgresql
-@@ -280,7 +293,7 @@ auth_file = /etc/pgbouncer/userlist.txt
- ;;;
- 
- ;; buffer for streaming packets
--;pkt_buf = 4096
-+pkt_buf = 50000
- 
- ;; man 2 listen
- ;listen_backlog = 128
++	make -C ../../pg_ddm.github.io
 diff --git a/include/bouncer.h b/include/bouncer.h
 index 45795e0..2fc5725 100644
 --- a/include/bouncer.h

@@ -112,3 +112,13 @@ class PassTagForm(FlaskForm):
     tag = StringField(lazy_gettext('Tag'), validators=[DataRequired()])
     enabled = BooleanField(lazy_gettext('Enabled'), default='true')
     submit = SubmitField(lazy_gettext(u'Submit'))
+
+
+class SQLFilterForm(FlaskForm):
+    table = StringField(lazy_gettext('Table'), id="autocomplete_table", validators=[DataRequired()],
+                        description=lazy_gettext('Please search like this(DB.SCHEMA.TABLE)'))
+
+    filter = StringField(lazy_gettext('SQL Filter'), validators=[DataRequired()])
+    enabled = BooleanField(lazy_gettext('Enabled'), default='true')
+
+    submit = SubmitField(lazy_gettext(u'Submit'))

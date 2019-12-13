@@ -49,7 +49,7 @@ char *rubycall(PgSocket *client, char *username, char *query_str) {
         ruby_script("RewriteQuery");
         rb_define_module("Gem");
         rb_require("rubygems");
-        rb_require("/etc/pgbouncer/mask_ruby/parser.rb");
+        rb_require("/etc/pg_ddm/mask_ruby/parser.rb");
         loader = 1;
     }
 
