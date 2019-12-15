@@ -55,7 +55,7 @@ class PgQueryOpt
       @query_parser = PgQuery.parse(@sql)
       @sql = @sql.strip
       @tag_sql = /(?<=^\/\*)([^\*]*)(?=\*\/)/.match(@sql)
-      @tag_sql = @tag_sql ? '/* ' + @tag_sql[1].strip() + ' */' : ''
+      @tag_sql = @tag_sql ? '/* ' + @tag_sql[1].strip + ' */' : ''
       if @user_id.nil?
         @user_id = /#{@user_regex}/.match(@sql)
 
@@ -101,20 +101,23 @@ class PgQueryOpt
   end
 
   def add_filter
-    etcd_key = ''
     @query_parser.tables.each do |col|
       etcd_key = if col.include? '.'
-                   col.gsub('.', '/')
+                   col.tr('.', '/')
                  else
                    'ktv/' + col
                  end
       etcd_key = '/sqlfilter/ktv_test/' + etcd_key
       filter = @etcd.get(etcd_key)
+      next unless filter.count > 0
 
-      puts JSON.parse(filter.kvs.first.value)
+      filter_arr = JSON.parse(filter.kvs.first.value)
+      next unless filter_arr['enabled'] == 'true'
+
+      puts @query_parser
     end
 
-    return ''
+    ''
   end
 
   def check_rules
@@ -126,9 +129,11 @@ class PgQueryOpt
     list.each do |col|
       i += 1
       next if col['ResTarget']['val']['ColumnRef'].nil?
+
       col_detail = col['ResTarget']['val']['ColumnRef']['fields']
 
       next unless col_detail[0]['A_Star'].nil?
+
       col_prefix = ''
       col_name_last = nil
       if col_detail.count == 3
@@ -142,6 +147,7 @@ class PgQueryOpt
           col_name_last = col_detail[1]
         else
           next unless col_detail[1]['A_Star'].nil?
+
           table = @query_parser.aliases[col_detail[0]['String']['str']]
           col_prefix = change_col_names_for_etcd(table)
           col_name_last = col_detail[1]['String']['str']
@@ -149,9 +155,7 @@ class PgQueryOpt
       elsif col_detail.count == 1
         @query_parser.tables.each do |table|
           xx = @etcd.get(change_col_names_for_etcd(table))
-          unless col_detail[0].is_a?(String)
-            col_detail[0] = col_detail[0]['String']['str']
-          end
+          col_detail[0] = col_detail[0]['String']['str'] unless col_detail[0].is_a?(String)
           if JSON.parse(xx.kvs.first.value).select {|h| h['column_name'] == col_detail[0]}.count > 0
             col_prefix = change_col_names_for_etcd(table)
             col_name_last = col_detail[0]
@@ -207,8 +211,10 @@ class PgQueryOpt
         end
         next unless user.count > 0
         next unless JSON.parse(user.kvs.first.value)['enabled'] == 'true'
+
         group_rule = @etcd.get(group_name)
         next unless group_rule.count > 0
+
         rules_group = JSON.parse(group_rule.kvs.first.value)
         if rules_group['rule'] == 'send_null'
           col = @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt']['targetList']
@@ -233,7 +239,7 @@ class PgQueryOpt
           xx = JSON.parse(rules_group['prop'].gsub('%col%', col['ResTarget']['val'].to_json))
 
           func = {'funcname' => [{'String' => {'str' => 'mask'}}, {'String' => {'str' => rules_group['rule']}}], 'args' => xx}
-          #TODO: Schema is not dynamic
+          # TODO: Schema is not dynamic
           @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt']['targetList'][i] = {'ResTarget' => {'name' => col_name, 'val' => {'FuncCall' => func}}}
         end
       end
@@ -306,7 +312,7 @@ class PgQueryOpt
       if table.include? '.'
         '/' + @db + '/' + table.tr('.', '/')
       else
-        # TODO add search path to etcd properties
+        # TODO: add search path to etcd properties
         '/' + @db + '/ktv/' + table.tr('.', '/')
       end
     else
@@ -381,7 +387,7 @@ class PgQueryOpt
                                 end
                   col_names = get_col_list_in_etcd(change_col_names_for_etcd(val), table_alias, col_alias)
 
-                  if col_names.nil? or col_names.count == 0
+                  if col_names.nil? || col_names.count.zero?
                     last_add = true
                     all_fields.push(list)
                   else
@@ -389,15 +395,13 @@ class PgQueryOpt
                     all_fields.concat(col_names)
                   end
                 end
-                if (col_names.nil? or col_names.count == 0) and last_add == false
-                  all_fields.push(list)
-                end
+                all_fields.push(list) if (col_names.nil? || col_names.count.zero?) && last_add == false
               end
               field = []
             else
               field.push(list)
             end
-            i = i + 1
+            i += 1
           end
           all_fields.push(field) if field.count > 0
         else
