@@ -101,23 +101,46 @@ class PgQueryOpt
   end
 
   def add_filter
+    puts @query_parser.dml_tables
     @query_parser.tables.each do |col|
-      etcd_key = if col.include? '.'
-                   col.tr('.', '/')
-                 else
-                   'ktv/' + col
-                 end
-      etcd_key = '/sqlfilter/ktv_test/' + etcd_key
+      etcd_schema_table = if col.include? '.'
+                            col
+                          else
+                            'ktv.' + col
+                          end
+      etcd_key = '/sqlfilter/ktv_test/' + etcd_schema_table.tr('.', '/')
       filter = @etcd.get(etcd_key)
       next unless filter.count > 0
 
       filter_arr = JSON.parse(filter.kvs.first.value)
       next unless filter_arr['enabled'] == 'true'
 
-      puts @query_parser
-    end
 
-    ''
+      filter_alias = @query_parser.aliases.select {|k, v| v == col}.keys
+
+      sql_w = if filter_alias[0].nil?
+                (filter_arr['filter'])
+              else
+                (filter_arr['filter']).to_s.gsub(etcd_schema_table, filter_alias[0])
+              end
+
+      # puts sql_w
+
+      filter_w = Array.new
+      xx = PgQuery.parse('SELECT WHERE ' + sql_w)
+
+
+      xx_tree = xx.tree
+      # xx_tree.extend Hashie::Extensions::DeepFind
+      # puts xx_tree.deep_find_all('ColumnRef')
+
+      filter_w.push(xx_tree[0]['RawStmt']['stmt']['SelectStmt']['whereClause'])
+      unless @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt']['whereClause'].nil?
+        filter_w.push(@query_parser.tree[0]['RawStmt']['stmt']['SelectStmt']['whereClause'])
+      end
+      @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt']['whereClause'] = {'BoolExpr' => {'boolop' => 0, 'args' => filter_w}}
+
+    end
   end
 
   def check_rules
