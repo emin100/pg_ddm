@@ -6,7 +6,7 @@ cd $PGBOUNCER
 make clean
 make distclean
 
-rm -rf $(find . -maxdepth 1 -type f -name "config.*" ! -name "*.mak.in") install-sh configure doc/pgddm.*
+rm -rf $(find . -maxdepth 1 -type f -name "config.*" ! -name "*.mak.in") install-sh configure doc/pg_ddm.*
 
 
 git diff > pg_ddm.patch
