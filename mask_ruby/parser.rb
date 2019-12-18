@@ -74,7 +74,6 @@ class PgQueryOpt
       # end
       i = 0
       for query in @query_parser.tree
-        puts query
         @query_tree = query
         @query_tree.extend Hashie::Extensions::DeepFind
 
@@ -93,8 +92,9 @@ class PgQueryOpt
       return_sql = get_subsql('ctequery', return_sql)
 
       return_sql = get_subsql('subquery', return_sql)
-
+      puts '-------------------------'
       puts @tag_sql + return_sql
+      puts '-------------------------'
       return @tag_sql + return_sql
     rescue => e
       puts e
