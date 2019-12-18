@@ -8,14 +8,14 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2019-11-08 12:34+0300\n"
+"POT-Creation-Date: 2019-12-18 10:22+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.7.0\n"
+"Generated-By: Babel 2.6.0\n"
 
 #: app.py:104
 msgid "Bye Bye"
@@ -29,11 +29,11 @@ msgstr ""
 msgid "Login Failed!"
 msgstr ""
 
-#: app.py:163 app.py:208 app.py:283 app.py:325 app.py:394
+#: app.py:163 app.py:208 app.py:283 app.py:325 app.py:391 app.py:546 app.py:583
 msgid "Update"
 msgstr ""
 
-#: app.py:163 app.py:225 app.py:252 app.py:296 app.py:336
+#: app.py:163 app.py:225 app.py:252 app.py:296 app.py:336 app.py:515 app.py:556
 msgid "List"
 msgstr ""
 
@@ -45,11 +45,12 @@ msgstr ""
 msgid "Tables"
 msgstr ""
 
-#: app.py:198 app.py:434
+#: app.py:198 app.py:447 app.py:524
 msgid "Updated"
 msgstr ""
 
-#: app.py:207 app.py:239 app.py:251 app.py:295 app.py:335 forms.py:37
+#: app.py:207 app.py:239 app.py:251 app.py:295 app.py:335 app.py:514
+#: forms.py:37
 msgid "Name"
 msgstr ""
 
@@ -58,7 +59,7 @@ msgstr ""
 msgid "Group Name"
 msgstr ""
 
-#: app.py:225 app.py:252 app.py:296 app.py:336
+#: app.py:225 app.py:252 app.py:296 app.py:336 app.py:515 app.py:556
 msgid "New"
 msgstr ""
 
@@ -66,7 +67,7 @@ msgstr ""
 msgid "Rule"
 msgstr ""
 
-#: app.py:231 app.py:262 app.py:306 app.py:363
+#: app.py:231 app.py:262 app.py:306 app.py:363 app.py:521 app.py:565
 msgid "Added"
 msgstr ""
 
@@ -74,16 +75,16 @@ msgstr ""
 msgid "Rules"
 msgstr ""
 
-#: app.py:236 app.py:277 app.py:321 app.py:391
+#: app.py:236 app.py:277 app.py:321 app.py:388 app.py:542 app.py:578
 msgid "Deleted"
 msgstr ""
 
-#: app.py:240 app.py:282 app.py:324 app.py:393
+#: app.py:240 app.py:282 app.py:324 app.py:390 app.py:545 app.py:582
 msgid "Delete"
 msgstr ""
 
-#: app.py:251 app.py:295 app.py:335 forms.py:38 forms.py:72 forms.py:80
-#: forms.py:85
+#: app.py:251 app.py:295 app.py:335 app.py:514 app.py:581 forms.py:38
+#: forms.py:72 forms.py:80 forms.py:85 forms.py:113 forms.py:122
 msgid "Enabled"
 msgstr ""
 
@@ -91,7 +92,7 @@ msgstr ""
 msgid "SQL User"
 msgstr ""
 
-#: app.py:274 app.py:284 app.py:318 app.py:326 templates/main_template.html:74
+#: app.py:274 app.py:284 app.py:318 app.py:326 templates/main_template.html:80
 msgid "Users"
 msgstr ""
 
@@ -107,20 +108,41 @@ msgstr ""
 msgid "Properties"
 msgstr ""
 
-#: app.py:363 app.py:391
+#: app.py:363 app.py:388
 msgid "Group"
 msgstr ""
 
-#: app.py:388 app.py:395 templates/main_template.html:52
+#: app.py:385 app.py:392 templates/main_template.html:52
 msgid "Groups"
 msgstr ""
 
-#: app.py:434 app.py:441 templates/main_template.html:100
+#: app.py:447 app.py:454 templates/main_template.html:106
 msgid "Admin User"
 msgstr ""
 
-#: app.py:484
+#: app.py:486
+msgid "Closed in config file"
+msgstr ""
+
+#: app.py:506
 msgid "PgBouncer Config"
+msgstr ""
+
+#: app.py:514 app.py:531 app.py:542 forms.py:112
+msgid "Tag"
+msgstr ""
+
+#: app.py:539 app.py:547 templates/main_template.html:70
+msgid "Masking Pass Tags"
+msgstr ""
+
+#: app.py:565 app.py:575 app.py:578 app.py:581 app.py:585 forms.py:121
+#: templates/main_template.html:76
+msgid "SQL Filter"
+msgstr ""
+
+#: app.py:581 forms.py:118
+msgid "Table"
 msgstr ""
 
 #: forms.py:12 forms.py:13
@@ -148,7 +170,7 @@ msgid "Please search like this(DB.SCHEMA.TABLE.COLUMN)"
 msgstr ""
 
 #: forms.py:27 forms.py:66 forms.py:73 forms.py:81 forms.py:91 forms.py:100
-#: forms.py:108
+#: forms.py:108 forms.py:114 forms.py:124
 msgid "Submit"
 msgstr ""
 
@@ -244,6 +266,10 @@ msgstr ""
 msgid "User"
 msgstr ""
 
+#: forms.py:119
+msgid "Please search like this(DB.SCHEMA.TABLE)"
+msgstr ""
+
 #: templates/dashboard.html:3 templates/main_template.html:46
 msgid "Dashboard"
 msgstr ""
@@ -261,23 +287,19 @@ msgstr ""
 msgid "Sign out"
 msgstr ""
 
-#: templates/main_template.html:70
-msgid "Masking Pass Tags"
-msgstr ""
-
-#: templates/main_template.html:79
+#: templates/main_template.html:85
 msgid "DB Users"
 msgstr ""
 
-#: templates/main_template.html:85
+#: templates/main_template.html:91
 msgid "SQL Users"
 msgstr ""
 
-#: templates/main_template.html:89
+#: templates/main_template.html:95
 msgid "General Settings"
 msgstr ""
 
-#: templates/main_template.html:94
+#: templates/main_template.html:100
 msgid "PgBouncer"
 msgstr ""
 

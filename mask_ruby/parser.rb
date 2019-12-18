@@ -72,14 +72,20 @@ class PgQueryOpt
       #
       #   end
       # end
+      i = 0
+      for query in @query_parser.tree
+        puts query
+        @query_tree = query
+        @query_tree.extend Hashie::Extensions::DeepFind
 
+        resolve_stars
+        check_rules
+        add_filter
 
-      @query_tree = @query_parser.tree
-      @query_tree.extend Hashie::Extensions::DeepFind
+        @query_parser.tree[i] = @query_tree
+        i += 1
+      end
 
-      resolve_stars
-      check_rules
-      add_filter
       return_sql = @query_parser.deparse
 
       return_sql = get_subsql('subselect', return_sql)
@@ -88,8 +94,7 @@ class PgQueryOpt
 
       return_sql = get_subsql('subquery', return_sql)
 
-      # puts @tag_sql + return_sql
-
+      puts @tag_sql + return_sql
       return @tag_sql + return_sql
     rescue => e
       puts e
@@ -129,7 +134,7 @@ class PgQueryOpt
 
       xx_tree = xx.tree
 
-      search_area = @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt']['fromClause']
+      search_area = @query_tree['RawStmt']['stmt']['SelectStmt']['fromClause']
       search_area.extend Hashie::Extensions::DeepFind
 
       pass = true
@@ -150,10 +155,10 @@ class PgQueryOpt
       next if pass
 
       filter_w.push(xx_tree[0]['RawStmt']['stmt']['SelectStmt']['whereClause'])
-      unless @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt']['whereClause'].nil?
-        filter_w.push(@query_parser.tree[0]['RawStmt']['stmt']['SelectStmt']['whereClause'])
+      unless @query_tree['RawStmt']['stmt']['SelectStmt']['whereClause'].nil?
+        filter_w.push(@query_tree['RawStmt']['stmt']['SelectStmt']['whereClause'])
       end
-      @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt']['whereClause'] = { 'BoolExpr' => { 'boolop' => 0, 'args' => filter_w } }
+      @query_tree['RawStmt']['stmt']['SelectStmt']['whereClause'] = { 'BoolExpr' => { 'boolop' => 0, 'args' => filter_w } }
 
 
     end
@@ -255,20 +260,23 @@ class PgQueryOpt
         next unless group_rule.count > 0
 
         rules_group = JSON.parse(group_rule.kvs.first.value)
+
+        next if rules_group['enabled'] == 'false'
+
         if rules_group['rule'] == 'send_null'
-          col = @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt']['targetList']
+          col = @query_tree['RawStmt']['stmt']['SelectStmt']['targetList']
           if col[i]['ResTarget']['name'].nil?
             col_name = col[i]['ResTarget']['val']['ColumnRef']['fields'][-1]
             col_name = col_name['String']['str'] unless col_name.is_a?(String)
           else
             col_name = col[i]['ResTarget']['name']
           end
-          @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt']['targetList'][i] = { 'ResTarget' => { 'name' => col_name, 'val' => { 'A_Const' => { 'val' => { 'Null' => {} } } } } }
+          @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i] = { 'ResTarget' => { 'name' => col_name, 'val' => { 'A_Const' => { 'val' => { 'Null' => {} } } } } }
         elsif rules_group['rule'] == 'delete_col'
           del_column.push(i)
         else
           # if rules_group['rule'] == "partial"
-          col = @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt']['targetList'][i]
+          col = @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i]
           if col['ResTarget']['name'].nil?
             col_name = col['ResTarget']['val']['ColumnRef']['fields'][-1]
             col_name = col_name['String']['str'] unless col_name.is_a?(String)
@@ -279,13 +287,13 @@ class PgQueryOpt
 
           func = { 'funcname' => [{ 'String' => { 'str' => 'mask' } }, { 'String' => { 'str' => rules_group['rule'] } }], 'args' => xx }
           # TODO: Schema is not dynamic
-          @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt']['targetList'][i] = { 'ResTarget' => { 'name' => col_name, 'val' => { 'FuncCall' => func } } }
+          @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i] = { 'ResTarget' => { 'name' => col_name, 'val' => { 'FuncCall' => func } } }
         end
       end
     end
     k = 0
     del_column.each do |col|
-      @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt']['targetList'].delete_at(col - k)
+      @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'].delete_at(col - k)
       k += 1;
     end
 
@@ -313,8 +321,8 @@ class PgQueryOpt
   end
 
   def star_column(all_fields)
-    unless (@query_parser.tree[0]['RawStmt']['stmt']['SelectStmt']).nil?
-      @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt']['targetList'] = []
+    unless (@query_tree['RawStmt']['stmt']['SelectStmt']).nil?
+      @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'] = []
       if all_fields.count > 0
         all_fields.each do |val|
           if val.is_a?(Array)
@@ -325,11 +333,11 @@ class PgQueryOpt
               val_end[2] = val[1]
               val = val_end
             end
-            @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt']['targetList'].push({ 'ResTarget' => { 'name' => extra, 'val' => { 'ColumnRef' => { 'fields' => val } } } })
+            @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'].push({ 'ResTarget' => { 'name' => extra, 'val' => { 'ColumnRef' => { 'fields' => val } } } })
           elsif !val['A_Star'].nil?
-            @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt']['targetList'].push({ 'ResTarget' => { 'val' => { 'ColumnRef' => { 'fields' => [val] } } } })
+            @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'].push({ 'ResTarget' => { 'val' => { 'ColumnRef' => { 'fields' => [val] } } } })
           else
-            @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt']['targetList'].push(val)
+            @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'].push(val)
           end
 
         end
@@ -338,10 +346,10 @@ class PgQueryOpt
   end
 
   def get_column_list
-    list = if @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt'].nil?
+    list = if @query_tree['RawStmt']['stmt']['SelectStmt'].nil?
              []
            else
-             @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt']['targetList']
+             @query_tree['RawStmt']['stmt']['SelectStmt']['targetList']
            end
     list
   end
@@ -367,9 +375,9 @@ class PgQueryOpt
     xx.extend Hashie::Extensions::DeepFind
 
     table_list = []
-    unless @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt'].nil?
-      unless @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt']['fromClause'].nil?
-        for k in @query_parser.tree[0]['RawStmt']['stmt']['SelectStmt']['fromClause']
+    unless @query_tree['RawStmt']['stmt']['SelectStmt'].nil?
+      unless @query_tree['RawStmt']['stmt']['SelectStmt']['fromClause'].nil?
+        for k in @query_tree['RawStmt']['stmt']['SelectStmt']['fromClause']
           if !k['JoinExpr'].nil?
             k.extend Hashie::Extensions::DeepFind
             if !k.deep_find('subquery')

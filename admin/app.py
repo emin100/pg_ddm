@@ -400,12 +400,28 @@ def autocomplete(url_type=None, key=None):
     etcd_conn = Etcd()
     autocomplete_list = []
     if url_type == 'autocomplete_table':
-        if key.count('.') == 3:
+
+        if key.count('.') == 0:
+            fields = etcd_conn.search_keys('/' + key.replace('.', '/'))
+            for i in fields:
+                if i.split('.')[0] + '.' not in autocomplete_list:
+                    autocomplete_list.append(i.split('.')[0] + '.')
+        elif key.count('.') == 1:
+            fields = etcd_conn.search_keys('/' + key.replace('.', '/'))
+            for i in fields:
+                if '.'.join(i.split('.')[0:2]) + '.' not in autocomplete_list:
+                    autocomplete_list.append('.'.join(i.split('.')[0:2]) + '.')
+        elif key.count('.') == 2:
+            fields = etcd_conn.search_keys('/' + key.replace('.', '/'))
+            for i in fields:
+                if '.'.join(i.split('.')[0:3]) + '.' not in autocomplete_list:
+                    autocomplete_list.append('.'.join(i.split('.')[0:3]) + '.')
+        elif key.count('.') == 3:
+            search_key = key.split('.')[-1]
             fields = etcd_conn.search('/' + '/'.join(key.split('.')[:-1]))
             for i in fields[0][0]:
-                autocomplete_list.append('.'.join(key.split('.')[:-1]) + '.' + i.get('column_name'))
-        else:
-            autocomplete_list = etcd_conn.search_keys('/' + key.replace('.', '/'))
+                if i.get('column_name').find(search_key) > -1:
+                    autocomplete_list.append('.'.join(key.split('.')[:-1]) + '.' + i.get('column_name'))
 
     else:
         autocomplete_list = etcd_conn.search_keys(
@@ -556,7 +572,7 @@ def sqlfilter(url_type=None):
             form.filter.data = form_data.get('filter')
             form.table.data = flask.request.args.get('key').replace('/sqlfilter/', '').replace('/', '.')
             form.table.render_kw = {'readonly': True}
-        return flask.render_template('list.html', main_header=_('Rules'), form=form, button_list=button_list)
+        return flask.render_template('list.html', main_header=_('SQL Filter'), form=form, button_list=button_list)
     elif url_type == 'delete':
         etcd_conn.delete(flask.request.args.get('key'))
         flash(_('SQL Filter') + ' ' + _('Deleted'), 'error')
