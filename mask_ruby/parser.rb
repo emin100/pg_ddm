@@ -4,31 +4,31 @@ require 'etcdv3'
 require 'hashie'
 
 class PgQueryOpt
-  @etcd = nil
-  @etcd_host = nil
-  @etcd_port = nil
-  @etcd_user = nil
-  @etcd_passwd = nil
-  @sql = nil
+  @etcd         = nil
+  @etcd_host    = nil
+  @etcd_port    = nil
+  @etcd_user    = nil
+  @etcd_passwd  = nil
+  @sql          = nil
   @query_parser = nil
-  @user_id = nil
-  @username = nil
-  @db = nil
-  @tag_sql = nil
-  @return_sql = nil
-  @query_tree = nil
-  @user_regex = nil
+  @user_id      = nil
+  @username     = nil
+  @db           = nil
+  @tag_sql      = nil
+  @return_sql   = nil
+  @query_tree   = nil
+  @user_regex   = nil
 
   def set_prop(sql, username, db, etcd_host, etcd_port, etcd_user, etcd_passwd, user_regex, tag_regex)
-    @sql = sql
-    @username = username
-    @db = db
-    @etcd_host = etcd_host
-    @etcd_port = etcd_port
-    @etcd_user = etcd_user
+    @sql         = sql
+    @username    = username
+    @db          = db
+    @etcd_host   = etcd_host
+    @etcd_port   = etcd_port
+    @etcd_user   = etcd_user
     @etcd_passwd = etcd_passwd
-    @user_regex = user_regex
-    @tag_regex = tag_regex
+    @user_regex  = user_regex
+    @tag_regex   = tag_regex
 
   end
 
@@ -41,7 +41,7 @@ class PgQueryOpt
         set_prop(subselect_sql, @username, @db, @etcd_host, @etcd_port, @etcd_user, @etcd_passwd, @user_regex, @tag_regex)
 
         subselect_sql_changed = get_sql
-        return_sql = return_sql.gsub subselect_sql, subselect_sql_changed
+        return_sql            = return_sql.gsub subselect_sql, subselect_sql_changed
       end
     end
     return_sql
@@ -51,11 +51,12 @@ class PgQueryOpt
     begin
       @pass_tag = /#{@tag_regex}/.match(@sql)
       return @sql if @pass_tag
+      #puts @sql
 
       @query_parser = PgQuery.parse(@sql)
-      @sql = @sql.strip
-      @tag_sql = /(?<=^\/\*)([^\*]*)(?=\*\/)/.match(@sql)
-      @tag_sql = @tag_sql ? '/* ' + @tag_sql[1].strip + ' */' : ''
+      @sql          = @sql.strip
+      @tag_sql      = /(?<=^\/\*)([^\*]*)(?=\*\/)/.match(@sql)
+      @tag_sql      = @tag_sql ? '/* ' + @tag_sql[1].strip + ' */' : ''
       if @user_id.nil?
         @user_id = /#{@user_regex}/.match(@sql)
 
@@ -82,7 +83,7 @@ class PgQueryOpt
         add_filter
 
         @query_parser.tree[i] = @query_tree
-        i += 1
+        i                     += 1
       end
 
       return_sql = @query_parser.deparse
@@ -92,9 +93,9 @@ class PgQueryOpt
       return_sql = get_subsql('ctequery', return_sql)
 
       return_sql = get_subsql('subquery', return_sql)
-      puts '-------------------------'
-      puts @tag_sql + return_sql
-      puts '-------------------------'
+      # puts '-------------------------'
+      # puts @tag_sql + return_sql
+      # puts '-------------------------'
       return @tag_sql + return_sql
     rescue => e
       puts e
@@ -112,27 +113,13 @@ class PgQueryOpt
                           else
                             'ktv.' + col
                           end
-      etcd_key = '/sqlfilter/ktv_test/' + etcd_schema_table.tr('.', '/')
-      filter = @etcd.get(etcd_key)
+      etcd_key          = '/sqlfilter/ktv_test/' + etcd_schema_table.tr('.', '/')
+      filter            = @etcd.get(etcd_key)
       next unless filter.count > 0
 
       filter_arr = JSON.parse(filter.kvs.first.value)
       next unless filter_arr['enabled'] == 'true'
 
-
-      filter_alias = @query_parser.aliases.select {|k, v| v == col}.keys
-
-      sql_w = if filter_alias[0].nil?
-                (filter_arr['filter'])
-              else
-                (filter_arr['filter']).tr('"', '').gsub(etcd_schema_table, filter_alias[0])
-              end
-
-      filter_w = []
-      xx = PgQuery.parse('SELECT WHERE ' + sql_w)
-
-
-      xx_tree = xx.tree
 
       search_area = @query_tree['RawStmt']['stmt']['SelectStmt']['fromClause']
       search_area.extend Hashie::Extensions::DeepFind
@@ -146,13 +133,22 @@ class PgQueryOpt
                        'ktv.' + x['relname']
                      end
 
-        if table_name == etcd_schema_table
-          pass = false
-        end
+        next unless table_name == etcd_schema_table
+        pass  = false
+        sql_w = if x['alias'].nil?
+                  (filter_arr['filter'])
+                else
+                  (filter_arr['filter']).tr('"', '').gsub(etcd_schema_table, x['alias']['Alias']['aliasname'])
+                end
       end
 
-
       next if pass
+
+      xx = PgQuery.parse('SELECT WHERE ' + sql_w)
+
+      xx_tree = xx.tree
+
+      filter_w = []
 
       filter_w.push(xx_tree[0]['RawStmt']['stmt']['SelectStmt']['whereClause'])
       unless @query_tree['RawStmt']['stmt']['SelectStmt']['whereClause'].nil?
@@ -165,11 +161,11 @@ class PgQueryOpt
   end
 
   def check_rules
-    list = get_column_list
-    del_column = Array.new
-    rule_list = {}
+    list           = get_column_list
+    del_column     = []
+    rule_list      = {}
     user_rule_list = {}
-    i = -1
+    i              = -1
     list.each do |col|
       i += 1
       next if col['ResTarget']['val']['ColumnRef'].nil?
@@ -178,30 +174,30 @@ class PgQueryOpt
 
       next unless col_detail[0]['A_Star'].nil?
 
-      col_prefix = ''
+      col_prefix    = ''
       col_name_last = nil
       if col_detail.count == 3
-        col_prefix = '/' + @db + '/' + col_detail[0] + '/' + col_detail[1]
+        col_prefix    = '/' + @db + '/' + col_detail[0] + '/' + col_detail[1]
         col_name_last = col_detail[2]
       elsif col_detail.count == 2
         if col_detail[0].is_a?(String)
-          table = @query_parser.aliases[col_detail[0]]
-          table = col_detail[0] if table.nil?
-          col_prefix = change_col_names_for_etcd(table)
+          table         = @query_parser.aliases[col_detail[0]]
+          table         = col_detail[0] if table.nil?
+          col_prefix    = change_col_names_for_etcd(table)
           col_name_last = col_detail[1]
         else
           next unless col_detail[1]['A_Star'].nil?
 
-          table = @query_parser.aliases[col_detail[0]['String']['str']]
-          col_prefix = change_col_names_for_etcd(table)
+          table         = @query_parser.aliases[col_detail[0]['String']['str']]
+          col_prefix    = change_col_names_for_etcd(table)
           col_name_last = col_detail[1]['String']['str']
         end
       elsif col_detail.count == 1
         @query_parser.tables.each do |table|
-          xx = @etcd.get(change_col_names_for_etcd(table))
+          xx            = @etcd.get(change_col_names_for_etcd(table))
           col_detail[0] = col_detail[0]['String']['str'] unless col_detail[0].is_a?(String)
-          if JSON.parse(xx.kvs.first.value).select {|h| h['column_name'] == col_detail[0]}.count > 0
-            col_prefix = change_col_names_for_etcd(table)
+          if JSON.parse(xx.kvs.first.value).select { |h| h['column_name'] == col_detail[0] }.count > 0
+            col_prefix    = change_col_names_for_etcd(table)
             col_name_last = col_detail[0]
           end
         end
@@ -211,7 +207,7 @@ class PgQueryOpt
 
       col_name = '/rules' + col_prefix
       if rule_list[col_name].nil?
-        rule = @etcd.get(col_name, range_end: col_name + '0')
+        rule                = @etcd.get(col_name, range_end: col_name + '0')
         rule_list[col_name] = {}
         if rule.count > 0
           rule.kvs.each do |xx|
@@ -233,10 +229,10 @@ class PgQueryOpt
       next unless !rule.nil? and rule['count'] > 0
       rule['kvs'].each do |rules|
         group_name = JSON.parse(rules.value)['group_name']
-        user = nil
+        user       = nil
         unless @user_id.nil?
           if (user_rule_list['/users/' + @user_id + group_name]).nil?
-            user = @etcd.get('/users/' + @user_id + group_name)
+            user                                              = @etcd.get('/users/' + @user_id + group_name)
             user_rule_list['/users/' + @user_id + group_name] = user
           else
             user = user_rule_list['/users/' + @user_id + group_name]
@@ -247,7 +243,7 @@ class PgQueryOpt
         end
         if @user_id.nil? or user.nil? or user.count == 0
           if (user_rule_list['/dbuser/' + @username + group_name]).nil?
-            user = @etcd.get('/dbuser/' + @username + group_name)
+            user                                                = @etcd.get('/dbuser/' + @username + group_name)
             user_rule_list['/dbuser/' + @username + group_name] = user
           else
             user = user_rule_list['/dbuser/' + @username + group_name]
@@ -310,7 +306,7 @@ class PgQueryOpt
   end
 
   def get_col_list_in_etcd(table, table_alias, col_alias)
-    columns = []
+    columns  = []
     col_list = @etcd.get(table)
     if col_list.count > 0
       JSON.parse(col_list.kvs.first.value).each do |val|
@@ -329,9 +325,9 @@ class PgQueryOpt
             extra = val[0]
             val.delete_at(0)
             if val[0].include? '.'
-              val_end = val[0].split('.')
+              val_end    = val[0].split('.')
               val_end[2] = val[1]
-              val = val_end
+              val        = val_end
             end
             @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'].push({ 'ResTarget' => { 'name' => extra, 'val' => { 'ColumnRef' => { 'fields' => val } } } })
           elsif !val['A_Star'].nil?
@@ -402,7 +398,7 @@ class PgQueryOpt
 
 
       get_column_list.each do |name|
-        i = 0
+        i     = 0
         field = []
         if !name['ResTarget']['val']['ColumnRef'].nil?
           col_alias = nil
@@ -414,7 +410,7 @@ class PgQueryOpt
             if list['A_Star']
               if i == 1
                 table_alias = field_list[0]['String']['str']
-                table = @query_parser.aliases[table_alias]
+                table       = @query_parser.aliases[table_alias]
                 if table.nil?
                   cvcv = []
                   cvcv.push(nil)
@@ -424,15 +420,15 @@ class PgQueryOpt
                 end
               else
                 col_names = []
-                last_add = false
+                last_add  = false
                 table_list.each do |val|
-                  table = @query_parser.aliases.detect {|f, value| value == val}
+                  table       = @query_parser.aliases.detect { |f, value| value == val }
                   table_alias = if table.nil?
                                   val
                                 else
                                   table[0]
                                 end
-                  col_names = get_col_list_in_etcd(change_col_names_for_etcd(val), table_alias, col_alias)
+                  col_names   = get_col_list_in_etcd(change_col_names_for_etcd(val), table_alias, col_alias)
 
                   if col_names.nil? || col_names.count.zero?
                     last_add = true

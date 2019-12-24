@@ -24,6 +24,8 @@ sudo make install
 
 DDMPATH="/etc/pg_ddm"
 
+cd ..
+
 sudo mkdir -p $DDMPATH
 sudo cp -R $PDIR/../admin $PDIR/../mask_ruby $PDIR/../pgbouncer/etc/pg_ddm.ini $PDIR/../pgbouncer/etc/userlist.txt  $DDMPATH/
 
