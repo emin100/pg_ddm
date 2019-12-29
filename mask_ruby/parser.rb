@@ -19,6 +19,7 @@ class PgQueryOpt
   @query_tree = nil
   @user_regex = nil
   @default_scheme = nil
+  @default_scheme_tables = {}
 
   def set_prop(sql, username, db, etcd_host, etcd_port, etcd_user, etcd_passwd, user_regex, tag_regex)
     @sql = sql
@@ -31,6 +32,7 @@ class PgQueryOpt
     @user_regex = user_regex
     @tag_regex = tag_regex
     @default_scheme = 'ktv, public'
+    @default_scheme_tables = {}
 
   end
 
@@ -108,17 +110,25 @@ class PgQueryOpt
     end
   end
 
-  def arrange_table_name(schema, table, p)
+  def check_default_scheme(schema, table, p)
+
     column = if schema.nil?
                if table.include? '.'
                  table
                else
-                 for scheme_name in @default_scheme.split(',') do
-                   table_name = scheme_name.strip + '.' + table
-                   table_in_etcd = @etcd.get('/' + @db + '/' + table_name)
-                   break if table_in_etcd.count > 0
+                 if @default_scheme_tables[table].nil?
+                   for scheme_name in @default_scheme.split(',') do
+                     table_name = scheme_name.strip + '.' + table
+                     table_in_etcd = @etcd.get('/' + @db + '/' + table_name.tr('.', '/'))
+                     break if table_in_etcd.count > 0
+                   end
+                   # puts table_name
+                   @default_scheme_tables[table] = table_name
+                   table_name
+                 else
+                   @default_scheme_tables[table]
                  end
-                 table_name
+
                end
              else
                schema + '.' + table
@@ -129,7 +139,7 @@ class PgQueryOpt
 
   def add_filter
     @query_parser.tables.each do |col|
-      etcd_schema_table = arrange_table_name(nil, col, '.')
+      etcd_schema_table = check_default_scheme(nil, col, '.')
       etcd_key = '/sqlfilter/' + @db + '/' + etcd_schema_table.tr('.', '/')
       filter = @etcd.get(etcd_key)
       next unless filter.count > 0
@@ -143,7 +153,7 @@ class PgQueryOpt
 
       pass = true
       for x in search_area.deep_find_all('RangeVar')
-        table_name = arrange_table_name(x['schemaname'], x['relname'], '.')
+        table_name = check_default_scheme(x['schemaname'], x['relname'], '.')
 
         next unless table_name == etcd_schema_table
 
@@ -365,13 +375,7 @@ class PgQueryOpt
 
   def change_col_names_for_etcd(table)
     if !table.nil?
-      '/' + @db + '/' + arrange_table_name(nil, table, '/')
-      # if table.include? '.'
-      #   '/' + @db + '/' + table.tr('.', '/')
-      # else
-      #   # TODO: add search path to etcd properties
-      #   '/' + @db + '/ktv/' + table.tr('.', '/')
-      # end
+      '/' + @db + '/' + check_default_scheme(nil, table, '/')
     else
       table
     end
