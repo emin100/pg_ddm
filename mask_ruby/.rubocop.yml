@@ -47,5 +47,8 @@ RSpec/NestedGroups:
 Style/ModuleFunction:
   Enabled: false
 
+Style/For:
+  Enabled: false
+
 Lint/ImplicitStringConcatenation:
   Enabled: false
