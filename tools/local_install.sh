@@ -27,7 +27,13 @@ DDMPATH="/etc/pg_ddm"
 cd ..
 
 sudo mkdir -p $DDMPATH
-sudo cp -R $PDIR/../admin $PDIR/../mask_ruby $PDIR/../pgbouncer/etc/pg_ddm.ini $PDIR/../pgbouncer/etc/userlist.txt  $DDMPATH/
+sudo cp -R $PDIR/../admin $PDIR/../mask_ruby $DDMPATH/
+
+if [ ! -f $DDMPATH/pg_ddm.ini ];
+then
+    echo "Geldi"
+    sudo cp -R  $PDIR/../pgbouncer/etc/pg_ddm.ini $PDIR/../pgbouncer/etc/userlist.txt  $DDMPATH/
+fi
 
 
 sudo mkdir -p /var/log/pg_ddm

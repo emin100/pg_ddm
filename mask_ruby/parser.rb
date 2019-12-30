@@ -4,35 +4,39 @@ require 'etcdv3'
 require 'hashie'
 
 class PgQueryOpt
-  @etcd = nil
-  @etcd_host = nil
-  @etcd_port = nil
-  @etcd_user = nil
-  @etcd_passwd = nil
-  @sql = nil
-  @query_parser = nil
-  @user_id = nil
-  @username = nil
-  @db = nil
-  @tag_sql = nil
-  @return_sql = nil
-  @query_tree = nil
-  @user_regex = nil
-  @default_scheme = nil
+  @etcd                  = nil
+  @etcd_host             = nil
+  @etcd_port             = nil
+  @etcd_user             = nil
+  @etcd_passwd           = nil
+  @sql                   = nil
+  @query_parser          = nil
+  @user_id               = nil
+  @username              = nil
+  @db                    = nil
+  @tag_sql               = nil
+  @return_sql            = nil
+  @query_tree            = nil
+  @user_regex            = nil
+  @default_scheme        = nil
   @default_scheme_tables = {}
+  @data_in_etcd          = {}
 
-  def set_prop(sql, username, db, etcd_host, etcd_port, etcd_user, etcd_passwd, user_regex, tag_regex)
-    @sql = sql
-    @username = username
-    @db = db
-    @etcd_host = etcd_host
-    @etcd_port = etcd_port
-    @etcd_user = etcd_user
-    @etcd_passwd = etcd_passwd
-    @user_regex = user_regex
-    @tag_regex = tag_regex
+  def set_prop(sql, username, db, etcd_host, etcd_port, etcd_user, etcd_passwd, user_regex, tag_regex, default_scheme, main_call)
+    @sql            = sql
+    @username       = username
+    @db             = db
+    @etcd_host      = etcd_host
+    @etcd_port      = etcd_port
+    @etcd_user      = etcd_user
+    @etcd_passwd    = etcd_passwd
+    @user_regex     = user_regex
+    @tag_regex      = tag_regex
     @default_scheme = 'ktv, public'
-    @default_scheme_tables = {}
+    if main_call
+      @default_scheme_tables = {}
+      @data_in_etcd          = {}
+    end
 
   end
 
@@ -42,10 +46,10 @@ class PgQueryOpt
       @query_tree.deep_find_all(key).each do |i|
 
         subselect_sql = @query_parser.deparse([i])
-        set_prop(subselect_sql, @username, @db, @etcd_host, @etcd_port, @etcd_user, @etcd_passwd, @user_regex, @tag_regex)
+        set_prop(subselect_sql, @username, @db, @etcd_host, @etcd_port, @etcd_user, @etcd_passwd, @user_regex, @tag_regex, @default_scheme, false)
 
         subselect_sql_changed = get_sql
-        return_sql = return_sql.gsub subselect_sql, subselect_sql_changed
+        return_sql            = return_sql.gsub subselect_sql, subselect_sql_changed
       end
     end
     return_sql
@@ -59,9 +63,9 @@ class PgQueryOpt
       #puts @sql
 
       @query_parser = PgQuery.parse(@sql)
-      @sql = @sql.strip
-      @tag_sql = /(?<=^\/\*)([^\*]*)(?=\*\/)/.match(@sql)
-      @tag_sql = @tag_sql ? '/* ' + @tag_sql[1].strip + ' */' : ''
+      @sql          = @sql.strip
+      @tag_sql      = /(?<=^\/\*)([^\*]*)(?=\*\/)/.match(@sql)
+      @tag_sql      = @tag_sql ? '/* ' + @tag_sql[1].strip + ' */' : ''
       if @user_id.nil?
         @user_id = /#{@user_regex}/.match(@sql)
 
@@ -89,7 +93,7 @@ class PgQueryOpt
         add_filter
 
         @query_parser.tree[i] = @query_tree
-        i += 1
+        i                     += 1
       end
 
       return_sql = @query_parser.deparse
@@ -110,6 +114,16 @@ class PgQueryOpt
     end
   end
 
+  def etcd_data(filter_id)
+    if @data_in_etcd[filter_id].nil?
+      # puts 'Filter: ' + filter_id
+      data                     = @etcd.get(filter_id)
+      @data_in_etcd[filter_id] = data
+
+    end
+    @data_in_etcd[filter_id]
+  end
+
   def check_default_scheme(schema, table, p)
 
     column = if schema.nil?
@@ -118,11 +132,11 @@ class PgQueryOpt
                else
                  if @default_scheme_tables[table].nil?
                    for scheme_name in @default_scheme.split(',') do
-                     table_name = scheme_name.strip + '.' + table
-                     table_in_etcd = @etcd.get('/' + @db + '/' + table_name.tr('.', '/'))
+                     table_name    = scheme_name.strip + '.' + table
+                     table_in_etcd = etcd_data('/' + @db + '/' + table_name.tr('.', '/'))
                      break if table_in_etcd.count > 0
                    end
-                   # puts table_name
+                   # puts " Default Scheme: " + table_name
                    @default_scheme_tables[table] = table_name
                    table_name
                  else
@@ -140,8 +154,8 @@ class PgQueryOpt
   def add_filter
     @query_parser.tables.each do |col|
       etcd_schema_table = check_default_scheme(nil, col, '.')
-      etcd_key = '/sqlfilter/' + @db + '/' + etcd_schema_table.tr('.', '/')
-      filter = @etcd.get(etcd_key)
+      etcd_key          = '/sqlfilter/' + @db + '/' + etcd_schema_table.tr('.', '/')
+      filter            = etcd_data(etcd_key)
       next unless filter.count > 0
 
       filter_arr = JSON.parse(filter.kvs.first.value)
@@ -157,7 +171,7 @@ class PgQueryOpt
 
         next unless table_name == etcd_schema_table
 
-        pass = false
+        pass  = false
         sql_w = if x['alias'].nil?
                   (filter_arr['filter'])
                 else
@@ -177,17 +191,17 @@ class PgQueryOpt
       unless @query_tree['RawStmt']['stmt']['SelectStmt']['whereClause'].nil?
         filter_w.push(@query_tree['RawStmt']['stmt']['SelectStmt']['whereClause'])
       end
-      @query_tree['RawStmt']['stmt']['SelectStmt']['whereClause'] = {'BoolExpr' => {'boolop' => 0, 'args' => filter_w}}
+      @query_tree['RawStmt']['stmt']['SelectStmt']['whereClause'] = { 'BoolExpr' => { 'boolop' => 0, 'args' => filter_w } }
 
     end
   end
 
   def check_rules
-    list = get_column_list
-    del_column = []
-    rule_list = {}
+    list           = get_column_list
+    del_column     = []
+    rule_list      = {}
     user_rule_list = {}
-    i = -1
+    i              = -1
     list.each do |col|
       i += 1
       next if col['ResTarget']['val']['ColumnRef'].nil?
@@ -196,30 +210,30 @@ class PgQueryOpt
 
       next unless col_detail[0]['A_Star'].nil?
 
-      col_prefix = ''
+      col_prefix    = ''
       col_name_last = nil
       if col_detail.count == 3
-        col_prefix = '/' + @db + '/' + col_detail[0] + '/' + col_detail[1]
+        col_prefix    = '/' + @db + '/' + col_detail[0] + '/' + col_detail[1]
         col_name_last = col_detail[2]
       elsif col_detail.count == 2
         if col_detail[0].is_a?(String)
-          table = @query_parser.aliases[col_detail[0]]
-          table = col_detail[0] if table.nil?
-          col_prefix = change_col_names_for_etcd(table)
+          table         = @query_parser.aliases[col_detail[0]]
+          table         = col_detail[0] if table.nil?
+          col_prefix    = change_col_names_for_etcd(table)
           col_name_last = col_detail[1]
         else
           next unless col_detail[1]['A_Star'].nil?
 
-          table = @query_parser.aliases[col_detail[0]['String']['str']]
-          col_prefix = change_col_names_for_etcd(table)
+          table         = @query_parser.aliases[col_detail[0]['String']['str']]
+          col_prefix    = change_col_names_for_etcd(table)
           col_name_last = col_detail[1]['String']['str']
         end
       elsif col_detail.count == 1
         @query_parser.tables.each do |table|
-          xx = @etcd.get(change_col_names_for_etcd(table))
+          xx            = etcd_data(change_col_names_for_etcd(table))
           col_detail[0] = col_detail[0]['String']['str'] unless col_detail[0].is_a?(String)
-          if JSON.parse(xx.kvs.first.value).select {|h| h['column_name'] == col_detail[0]}.count > 0
-            col_prefix = change_col_names_for_etcd(table)
+          if JSON.parse(xx.kvs.first.value).select { |h| h['column_name'] == col_detail[0] }.count > 0
+            col_prefix    = change_col_names_for_etcd(table)
             col_name_last = col_detail[0]
           end
         end
@@ -229,7 +243,7 @@ class PgQueryOpt
 
       col_name = '/rules' + col_prefix
       if rule_list[col_name].nil?
-        rule = @etcd.get(col_name, range_end: col_name + '0')
+        rule                = @etcd.get(col_name, range_end: col_name + '0')
         rule_list[col_name] = {}
         if rule.count > 0
           rule.kvs.each do |xx|
@@ -252,10 +266,10 @@ class PgQueryOpt
 
       rule['kvs'].each do |rules|
         group_name = JSON.parse(rules.value)['group_name']
-        user = nil
+        user       = nil
         unless @user_id.nil?
           if (user_rule_list['/users/' + @user_id + group_name]).nil?
-            user = @etcd.get('/users/' + @user_id + group_name)
+            user                                              = etcd_data('/users/' + @user_id + group_name)
             user_rule_list['/users/' + @user_id + group_name] = user
           else
             user = user_rule_list['/users/' + @user_id + group_name]
@@ -266,7 +280,7 @@ class PgQueryOpt
         end
         if @user_id.nil? or user.nil? or user.count == 0
           if (user_rule_list['/dbuser/' + @username + group_name]).nil?
-            user = @etcd.get('/dbuser/' + @username + group_name)
+            user                                                = etcd_data('/dbuser/' + @username + group_name)
             user_rule_list['/dbuser/' + @username + group_name] = user
           else
             user = user_rule_list['/dbuser/' + @username + group_name]
@@ -275,7 +289,7 @@ class PgQueryOpt
         next unless user.count > 0
         next unless JSON.parse(user.kvs.first.value)['enabled'] == 'true'
 
-        group_rule = @etcd.get(group_name)
+        group_rule = etcd_data(group_name)
         next unless group_rule.count > 0
 
         rules_group = JSON.parse(group_rule.kvs.first.value)
@@ -290,7 +304,7 @@ class PgQueryOpt
           else
             col_name = col[i]['ResTarget']['name']
           end
-          @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i] = {'ResTarget' => {'name' => col_name, 'val' => {'A_Const' => {'val' => {'Null' => {}}}}}}
+          @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i] = { 'ResTarget' => { 'name' => col_name, 'val' => { 'A_Const' => { 'val' => { 'Null' => {} } } } } }
         elsif rules_group['rule'] == 'delete_col'
           del_column.push(i)
         else
@@ -304,9 +318,9 @@ class PgQueryOpt
           end
           xx = JSON.parse(rules_group['prop'].gsub('%col%', col['ResTarget']['val'].to_json))
 
-          func = {'funcname' => [{'String' => {'str' => 'mask'}}, {'String' => {'str' => rules_group['rule']}}], 'args' => xx}
+          func = { 'funcname' => [{ 'String' => { 'str' => 'mask' } }, { 'String' => { 'str' => rules_group['rule'] } }], 'args' => xx }
           # TODO: Schema is not dynamic
-          @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i] = {'ResTarget' => {'name' => col_name, 'val' => {'FuncCall' => func}}}
+          @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i] = { 'ResTarget' => { 'name' => col_name, 'val' => { 'FuncCall' => func } } }
         end
       end
     end
@@ -329,8 +343,8 @@ class PgQueryOpt
   end
 
   def get_col_list_in_etcd(table, table_alias, col_alias)
-    columns = []
-    col_list = @etcd.get(table)
+    columns  = []
+    col_list = etcd_data(table)
     if col_list.count > 0
       JSON.parse(col_list.kvs.first.value).each do |val|
         columns.push([col_alias, table_alias, val['column_name']])
@@ -348,13 +362,13 @@ class PgQueryOpt
             extra = val[0]
             val.delete_at(0)
             if val[0].include? '.'
-              val_end = val[0].split('.')
+              val_end    = val[0].split('.')
               val_end[2] = val[1]
-              val = val_end
+              val        = val_end
             end
-            @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'].push({'ResTarget' => {'name' => extra, 'val' => {'ColumnRef' => {'fields' => val}}}})
+            @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'].push({ 'ResTarget' => { 'name' => extra, 'val' => { 'ColumnRef' => { 'fields' => val } } } })
           elsif !val['A_Star'].nil?
-            @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'].push({'ResTarget' => {'val' => {'ColumnRef' => {'fields' => [val]}}}})
+            @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'].push({ 'ResTarget' => { 'val' => { 'ColumnRef' => { 'fields' => [val] } } } })
           else
             @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'].push(val)
           end
@@ -416,7 +430,7 @@ class PgQueryOpt
 
 
       get_column_list.each do |name|
-        i = 0
+        i     = 0
         field = []
         if !name['ResTarget']['val']['ColumnRef'].nil?
           col_alias = nil
@@ -428,7 +442,7 @@ class PgQueryOpt
             if list['A_Star']
               if i == 1
                 table_alias = field_list[0]['String']['str']
-                table = @query_parser.aliases[table_alias]
+                table       = @query_parser.aliases[table_alias]
                 if table.nil?
                   cvcv = []
                   cvcv.push(nil)
@@ -438,15 +452,15 @@ class PgQueryOpt
                 end
               else
                 col_names = []
-                last_add = false
+                last_add  = false
                 table_list.each do |val|
-                  table = @query_parser.aliases.detect {|f, value| value == val}
+                  table       = @query_parser.aliases.detect { |f, value| value == val }
                   table_alias = if table.nil?
                                   val
                                 else
                                   table[0]
                                 end
-                  col_names = get_col_list_in_etcd(change_col_names_for_etcd(val), table_alias, col_alias)
+                  col_names   = get_col_list_in_etcd(change_col_names_for_etcd(val), table_alias, col_alias)
 
                   if col_names.nil? || col_names.count.zero?
                     last_add = true

@@ -15,6 +15,7 @@ struct query_data {
   VALUE etcd_passwd;
   VALUE user_regex;
   VALUE tag_regex;
+  VALUE default_scheme;
 };
 
 
@@ -28,7 +29,7 @@ VALUE *embeded(VALUE q)
     parser = rb_const_get(rb_cObject, rb_intern("PgQueryOpt"));
 
     VALUE xx = rb_funcall(parser, rb_intern("new"), 0);
-    rb_funcall(xx, rb_intern("set_prop"), 9, data->query_str, data->username, data->db, data->etcd_host, data->etcd_port, data->etcd_user, data->etcd_passwd, data->user_regex, data->tag_regex);
+    rb_funcall(xx, rb_intern("set_prop"), 11, data->query_str, data->username, data->db, data->etcd_host, data->etcd_port, data->etcd_user, data->etcd_passwd, data->user_regex, data->tag_regex, data->default_scheme, true);
     result = rb_funcall(xx, rb_intern("get_sql"), 0);
 
 
@@ -63,6 +64,7 @@ char *rubycall(PgSocket *client, char *username, char *query_str) {
     q.etcd_passwd = rb_str_new_cstr(cf_etcd_passwd);
     q.user_regex = rb_str_new_cstr(cf_user_regex);
     q.tag_regex = rb_str_new_cstr(cf_tag_regex);
+    q.default_scheme = rb_str_new_cstr("ktv, public");
 
 
     res = rb_protect(embeded, (VALUE)(&q), &state);
