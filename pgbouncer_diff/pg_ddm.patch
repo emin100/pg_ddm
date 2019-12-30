@@ -238,7 +238,7 @@ index acaa9a1..e374380 100644
  	if (!find_server(client))
  		return false;
 diff --git a/src/main.c b/src/main.c
-index e7e63d6..3c3385c 100644
+index e7e63d6..d12c587 100644
 --- a/src/main.c
 +++ b/src/main.c
 @@ -165,6 +165,12 @@ char *cf_server_tls_ca_file;
@@ -268,3 +268,18 @@ index e7e63d6..3c3385c 100644
  {NULL}
  };
  
+@@ -815,6 +828,14 @@ static void cleanup(void)
+ 	xfree(&cf_server_tls_key_file);
+ 	xfree(&cf_server_tls_ciphers);
+ 
++    xfree(&cf_etcd_host);
++    xfree(&cf_etcd_port);
++    xfree(&cf_etcd_user);
++    xfree(&cf_etcd_passwd);
++    xfree(&cf_user_regex);
++    xfree(&cf_tag_regex);
++
++
+ 	xfree((char **)&cf_logfile);
+ 	xfree((char **)&cf_syslog_ident);
+ 	xfree((char **)&cf_syslog_facility);

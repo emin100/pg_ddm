@@ -32,8 +32,8 @@ class PgQueryOpt
     @etcd_passwd    = etcd_passwd
     @user_regex     = user_regex
     @tag_regex      = tag_regex
-    @default_scheme = 'ktv, public'
     if main_call
+      @default_scheme = default_scheme
       @default_scheme_tables = {}
       @data_in_etcd          = {}
     end
