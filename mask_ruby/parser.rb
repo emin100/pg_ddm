@@ -23,17 +23,17 @@ class PgQueryOpt
   @data_in_etcd          = {}
 
   def set_prop(sql, username, db, etcd_host, etcd_port, etcd_user, etcd_passwd, user_regex, tag_regex, default_scheme, main_call)
-    @sql            = sql
-    @username       = username
-    @db             = db
-    @etcd_host      = etcd_host
-    @etcd_port      = etcd_port
-    @etcd_user      = etcd_user
-    @etcd_passwd    = etcd_passwd
-    @user_regex     = user_regex
-    @tag_regex      = tag_regex
+    @sql         = sql
+    @username    = username
+    @db          = db
+    @etcd_host   = etcd_host
+    @etcd_port   = etcd_port
+    @etcd_user   = etcd_user
+    @etcd_passwd = etcd_passwd
+    @user_regex  = user_regex
+    @tag_regex   = tag_regex
     if main_call
-      @default_scheme = default_scheme
+      @default_scheme        = default_scheme
       @default_scheme_tables = {}
       @data_in_etcd          = {}
     end
@@ -103,9 +103,9 @@ class PgQueryOpt
       return_sql = get_subsql('ctequery', return_sql)
 
       return_sql = get_subsql('subquery', return_sql)
-      # puts '-------------------------'
-      # puts @tag_sql + return_sql
-      # puts '-------------------------'
+      puts '-------------------------'
+      puts @tag_sql + return_sql
+      puts '-------------------------'
       return @tag_sql + return_sql
     rescue => e
       puts e
@@ -327,7 +327,7 @@ class PgQueryOpt
     k = 0
     del_column.each do |col|
       @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'].delete_at(col - k)
-      k += 1;
+      k += 1
     end
 
   end
@@ -382,6 +382,7 @@ class PgQueryOpt
     list = if @query_tree['RawStmt']['stmt']['SelectStmt'].nil?
              []
            else
+             puts @query_tree['RawStmt']['stmt']['SelectStmt']['targetList']
              @query_tree['RawStmt']['stmt']['SelectStmt']['targetList']
            end
     list
