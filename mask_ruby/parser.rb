@@ -103,9 +103,9 @@ class PgQueryOpt
       return_sql = get_subsql('ctequery', return_sql)
 
       return_sql = get_subsql('subquery', return_sql)
-      puts '-------------------------'
-      puts @tag_sql + return_sql
-      puts '-------------------------'
+      # puts '-------------------------'
+      # puts @tag_sql + return_sql
+      # puts '-------------------------'
       return @tag_sql + return_sql
     rescue => e
       puts e
@@ -382,7 +382,7 @@ class PgQueryOpt
     list = if @query_tree['RawStmt']['stmt']['SelectStmt'].nil?
              []
            else
-             puts @query_tree['RawStmt']['stmt']['SelectStmt']['targetList']
+             # puts @query_tree['RawStmt']['stmt']['SelectStmt']['targetList']
              @query_tree['RawStmt']['stmt']['SelectStmt']['targetList']
            end
     list

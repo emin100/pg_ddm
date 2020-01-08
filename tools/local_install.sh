@@ -9,6 +9,13 @@ then
     USERNAME=`whoami`
 fi
 
+NEWINSTALL=$2
+
+if [ "$NEWINSTALL" == "" ];
+then
+    NEWINSTALL=0
+fi
+
 cd $PDIR/../pgbouncer
 
 make clean
@@ -22,6 +29,8 @@ make -j4
 sudo make install
 
 
+
+
 DDMPATH="/etc/pg_ddm"
 
 cd ..
@@ -29,7 +38,7 @@ cd ..
 sudo mkdir -p $DDMPATH
 sudo cp -R admin mask_ruby $DDMPATH/
 
-if [ ! -f $DDMPATH/pg_ddm.ini ];
+if [ ! -f $DDMPATH/pg_ddm.ini ] || [ $NEWINSTALL -eq 1 ];
 then
     sudo cp -R  pgbouncer/etc/pg_ddm.ini pgbouncer/etc/userlist.txt  $DDMPATH/
 fi
@@ -37,6 +46,7 @@ fi
 
 sudo mkdir -p /var/log/pg_ddm
 sudo mkdir -p /var/run/pg_ddm
+
 
 sudo chown -R $USERNAME:$USERNAME /var/log/pg_ddm /var/run/pg_ddm $DDMPATH
 
