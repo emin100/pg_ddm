@@ -79,70 +79,73 @@ bool rewrite_query(PgSocket *client, PktHdr *pkt) {
 
 	if (cf_pg_ddm_enabled) {
 
-		/* call ruby function to rewrite the query */
-		qr = rubycall(client, client->auth_user->name, query_str);
-		tmp_new_query_str = qr.query;
-		if (tmp_new_query_str == NULL) {
-			slog_debug(client, "query unchanged");
-			return true;
-		}
-		new_query_str = tag_rewritten(tmp_new_query_str);
-		slog_debug(client, "query tag changed %s", new_query_str);
+        /* call ruby function to rewrite the query */
+        qr = rubycall(client, client->auth_user->name, query_str);
+        tmp_new_query_str = qr.query;
+    }else {
+        tmp_new_query_str = query_str;
+    }
+    if (tmp_new_query_str == NULL) {
+        slog_debug(client, "query unchanged");
+        return true;
+    }
+    new_query_str = tag_rewritten(tmp_new_query_str);
+    slog_debug(client, "query tag changed %s", new_query_str);
 //    free(tmp_new_query_str);
-		loggable_query_str = strip_newlines(new_query_str);
-		slog_debug(client, "rewrite_query: New => %s", loggable_query_str);
-		free(loggable_query_str);
+    loggable_query_str = strip_newlines(new_query_str);
+    slog_debug(client, "rewrite_query: New => %s", loggable_query_str);
+    free(loggable_query_str);
 
-		/* new query must fit in the buffer */
-		if ((int) (sbuf->io->recv_pos + strlen(new_query_str)
-				- strlen(query_str)) > (int) cf_sbuf_len) {
-			slog_error(client,
-					"Rewritten query will not fit into the allocated buffer!");
-			free(new_query_str);
-			return handle_failure(client);
-		}
+    /* new query must fit in the buffer */
+    if ((int) (sbuf->io->recv_pos + strlen(new_query_str)
+            - strlen(query_str)) > (int) cf_sbuf_len) {
+        slog_error(client,
+                "Rewritten query will not fit into the allocated buffer!");
+        free(new_query_str);
+        return handle_failure(client);
+    }
 
-		/* manipulate the buffer to replace query */
-		/* clone buffer */
-		new_io_buf = malloc(cf_sbuf_len);
-		if (new_io_buf == NULL) {
-			fatal_perror("malloc");
-		}
-		memcpy(new_io_buf, sbuf->io->buf, cf_sbuf_len);
-		i = sbuf->io->parse_pos;
-		/* packet type */
-		new_io_buf[i++] = pkt->type;
-		/* packet length */
-		new_pkt_len = pkt->len + strlen(new_query_str) - strlen(query_str) - 1;
-		new_io_buf[i++] = (new_pkt_len >> 24) & 255;
-		new_io_buf[i++] = (new_pkt_len >> 16) & 255;
-		new_io_buf[i++] = (new_pkt_len >> 8) & 255;
-		new_io_buf[i++] = new_pkt_len & 255;
-		/* statement str - for type P */
-		if (pkt->type == 'P') {
-			strcpy(&new_io_buf[i], stmt_str);
-			i += strlen(stmt_str) + 1;
-		}
-		/* query string */
-		strcpy(&new_io_buf[i], new_query_str);
-		i += strlen(new_query_str) + 1;
-		/* copy everything else in buffer */
-		remaining_buffer_ptr = query_str + strlen(query_str) + 1;
-		remaining_buffer_len = (char*) &sbuf->io->buf[sbuf->io->recv_pos]
-				- remaining_buffer_ptr;
-		memcpy(&new_io_buf[i], remaining_buffer_ptr, remaining_buffer_len);
-		i += remaining_buffer_len;
-		/* replace original buffer with new buffer */
-		memcpy(sbuf->io->buf, new_io_buf, i);
-		/* adjust buffer recv_pos index to new position */
-		sbuf->io->recv_pos = i;
-		/* update PktHdr structure */
-		pkt->len = new_pkt_len + 1;
-		iobuf_parse_all(sbuf->io, &pkt->data);
+    /* manipulate the buffer to replace query */
+    /* clone buffer */
+    new_io_buf = malloc(cf_sbuf_len);
+    if (new_io_buf == NULL) {
+        fatal_perror("malloc");
+    }
+    memcpy(new_io_buf, sbuf->io->buf, cf_sbuf_len);
+    i = sbuf->io->parse_pos;
+    /* packet type */
+    new_io_buf[i++] = pkt->type;
+    /* packet length */
+    new_pkt_len = pkt->len + strlen(new_query_str) - strlen(query_str) - 1;
+    new_io_buf[i++] = (new_pkt_len >> 24) & 255;
+    new_io_buf[i++] = (new_pkt_len >> 16) & 255;
+    new_io_buf[i++] = (new_pkt_len >> 8) & 255;
+    new_io_buf[i++] = new_pkt_len & 255;
+    /* statement str - for type P */
+    if (pkt->type == 'P') {
+        strcpy(&new_io_buf[i], stmt_str);
+        i += strlen(stmt_str) + 1;
+    }
+    /* query string */
+    strcpy(&new_io_buf[i], new_query_str);
+    i += strlen(new_query_str) + 1;
+    /* copy everything else in buffer */
+    remaining_buffer_ptr = query_str + strlen(query_str) + 1;
+    remaining_buffer_len = (char*) &sbuf->io->buf[sbuf->io->recv_pos]
+            - remaining_buffer_ptr;
+    memcpy(&new_io_buf[i], remaining_buffer_ptr, remaining_buffer_len);
+    i += remaining_buffer_len;
+    /* replace original buffer with new buffer */
+    memcpy(sbuf->io->buf, new_io_buf, i);
+    /* adjust buffer recv_pos index to new position */
+    sbuf->io->recv_pos = i;
+    /* update PktHdr structure */
+    pkt->len = new_pkt_len + 1;
+    iobuf_parse_all(sbuf->io, &pkt->data);
 
-		free(new_query_str);
-		free(new_io_buf);
-	}
+    free(new_query_str);
+    free(new_io_buf);
+
 
 	if (cf_pg_ddm_rewrite_route) {
 		if (qr.query == NULL) {

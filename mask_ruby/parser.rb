@@ -40,16 +40,23 @@ class PgQueryOpt
 
   end
 
-
   def get_role(sql)
-    parser = nil
     if @sql
       puts 'Varolan'
       parser = @query_parser
     else
       parser = PgQuery.parse(sql)
     end
-    return "master"
+    tree = parser.tree
+    tree.extend Hashie::Extensions::DeepFind
+    keys = tree.deep_find_all('FuncCall')
+    keys2 = tree.deep_find_all('TransactionStmt')
+    if keys.nil? && keys2.nil?
+      'read'
+    else
+      'master'
+    end
+
   end
 
   def get_subsql(key, return_sql)

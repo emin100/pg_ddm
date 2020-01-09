@@ -18,13 +18,13 @@ fi
 
 cd $PDIR/../pgbouncer
 
-#make clean
-#make distclean
-#
-#rm -rf $(find . -maxdepth 1 -type f -name "config.*" ! -name "*.mak.in") install-sh configure doc/pg_ddm.*
-#
-#./autogen.sh
-#./configure
+make clean
+make distclean
+
+rm -rf $(find . -maxdepth 1 -type f -name "config.*" ! -name "*.mak.in") install-sh configure doc/pg_ddm.*
+
+./autogen.sh
+./configure
 make -j4
 sudo make install
 
