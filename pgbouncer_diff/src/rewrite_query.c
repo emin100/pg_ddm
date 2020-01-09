@@ -33,7 +33,8 @@ bool rewrite_query(PgSocket *client, PktHdr *pkt) {
 	SBuf *sbuf = &client->sbuf;
 	char *pkt_start;
 	char *stmt_str = "", *query_str, *loggable_query_str, *tmp_new_query_str,
-			*new_query_str;
+			*tmp_new_query_role = "master", *new_query_str;
+	struct query_return qr;
 	char *new_io_buf;
 	char *remaining_buffer_ptr;
 	int new_pkt_len, remaining_buffer_len;
@@ -41,43 +42,46 @@ bool rewrite_query(PgSocket *client, PktHdr *pkt) {
 	PgDatabase *db;
 	PgPool *pool;
 
+
+	qr.query = NULL;
+
+	if (!handle_incomplete_packet(client, pkt))
+		return false;
+
+	/* extract query string from packet */
+	/* first byte is the packet type (which we already know)
+	 * next 4 bytes is the packet length
+	 * For packet type 'Q', the query string is next
+	 * 	'Q' | int32 len | str query
+	 * For packet type 'P', the query string is after the stmt string
+	 * 	'P' | int32 len | str stmt | str query | int16 numparams | int32 paramoid
+	 * (Ref: https://www.pgcon.org/2014/schedule/attachments/330_postgres-for-the-wire.pdf)
+	 */
+	pkt_start = (char*) &sbuf->io->buf[sbuf->io->parse_pos];
+	if (pkt->type == 'Q') {
+		query_str = (char*) pkt_start + 5;
+	} else if (pkt->type == 'P') {
+		stmt_str = pkt_start + 5;
+		query_str = stmt_str + strlen(stmt_str) + 1;
+	} else {
+		fatal("Invalid packet type - expected Q or P, got %c", pkt->type);
+	}
+
+	loggable_query_str = strip_newlines(query_str);
+	slog_debug(client, "rewrite_query: Username => %s",
+			client->auth_user->name);
+	slog_debug(client, "rewrite_query: Orig Query=> %s", loggable_query_str);
+	free(loggable_query_str);
+
+	/* don't process same query again */
+	if (is_rewritten(query_str))
+		return true;
+
 	if (cf_pg_ddm_enabled) {
-		if (!handle_incomplete_packet(client, pkt))
-			return false;
-
-		/* extract query string from packet */
-		/* first byte is the packet type (which we already know)
-		 * next 4 bytes is the packet length
-		 * For packet type 'Q', the query string is next
-		 * 	'Q' | int32 len | str query
-		 * For packet type 'P', the query string is after the stmt string
-		 * 	'P' | int32 len | str stmt | str query | int16 numparams | int32 paramoid
-		 * (Ref: https://www.pgcon.org/2014/schedule/attachments/330_postgres-for-the-wire.pdf)
-		 */
-		pkt_start = (char*) &sbuf->io->buf[sbuf->io->parse_pos];
-		if (pkt->type == 'Q') {
-			query_str = (char*) pkt_start + 5;
-		} else if (pkt->type == 'P') {
-			stmt_str = pkt_start + 5;
-			query_str = stmt_str + strlen(stmt_str) + 1;
-		} else {
-			fatal("Invalid packet type - expected Q or P, got %c", pkt->type);
-		}
-
-		/* don't process same query again */
-		if (is_rewritten(query_str))
-			return true;
-
-		loggable_query_str = strip_newlines(query_str);
-		slog_debug(client, "rewrite_query: Username => %s",
-				client->auth_user->name);
-		slog_debug(client, "rewrite_query: Orig Query=> %s",
-				loggable_query_str);
-		free(loggable_query_str);
 
 		/* call ruby function to rewrite the query */
-		tmp_new_query_str = rubycall(client, client->auth_user->name,
-				query_str);
+		qr = rubycall(client, client->auth_user->name, query_str);
+		tmp_new_query_str = qr.query;
 		if (tmp_new_query_str == NULL) {
 			slog_debug(client, "query unchanged");
 			return true;
@@ -140,19 +144,29 @@ bool rewrite_query(PgSocket *client, PktHdr *pkt) {
 		free(new_io_buf);
 	}
 
+	if (cf_pg_ddm_rewrite_route) {
+		if (qr.query == NULL) {
+			qr = rubycall_role(client, client->auth_user->name, query_str);
+		}
+        slog_debug(client, "DB Role: %s", qr.role);
+		tmp_new_query_role = qr.role;
+	}
 
-	if(cf_pg_ddm_ini_route) {
+	if (cf_pg_ddm_ini_route || cf_pg_ddm_rewrite_route) {
 		if (client->query_start == client->xact_start) {
 
-			if(client->pool->db->route == 1){
-				db = find_routing_database(client->pool->db->name, "master", 0);
+			if (client->pool->db->route == 1) {
+				db = find_routing_database(client->pool->db->name,
+						tmp_new_query_role, 0);
 				if (db == NULL) {
-					slog_error(client, "check ini and/or routing rules function");
-				}else {
+					slog_error(client,
+							"check ini and/or routing rules function");
+				} else {
 					pool = get_pool(db, client->auth_user);
 					if (client->pool != pool) {
 						if (client->link != NULL) {
-							slog_debug(client, "releasing existing server connection");
+							slog_debug(client,
+									"releasing existing server connection");
 							release_server(client->link);
 							client->link = NULL;
 						}
@@ -161,12 +175,14 @@ bool rewrite_query(PgSocket *client, PktHdr *pkt) {
 								db->name);
 						client->pool = pool;
 					} else {
-						slog_debug(client, "already connected to pool <%s>", db->name);
+						slog_debug(client, "already connected to pool <%s>",
+								db->name);
 					}
 				}
 			}
 		} else {
-			slog_debug(client, "use old connection info <%s>", client->pool->db->name);
+			slog_debug(client, "use old connection info <%s>",
+					client->pool->db->name);
 		}
 	}
 	return true;

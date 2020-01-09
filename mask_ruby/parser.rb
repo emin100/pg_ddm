@@ -40,6 +40,18 @@ class PgQueryOpt
 
   end
 
+
+  def get_role(sql)
+    parser = nil
+    if @sql
+      puts 'Varolan'
+      parser = @query_parser
+    else
+      parser = PgQuery.parse(sql)
+    end
+    return "master"
+  end
+
   def get_subsql(key, return_sql)
     common = @query_tree.deep_find_all(key)
     unless common.nil?

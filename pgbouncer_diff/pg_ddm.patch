@@ -379,7 +379,7 @@ index e7e63d6..207e6be 100644
  	xfree((char **)&cf_syslog_ident);
  	xfree((char **)&cf_syslog_facility);
 diff --git a/src/objects.c b/src/objects.c
-index 4878fa1..376ffd6 100644
+index 4878fa1..6281940 100644
 --- a/src/objects.c
 +++ b/src/objects.c
 @@ -487,6 +487,29 @@ PgDatabase *find_database(const char *name)
@@ -395,7 +395,7 @@ index 4878fa1..376ffd6 100644
 +	PgDatabase *db;
 +	statlist_for_each(item, &database_list) {
 +		db = container_of(item, PgDatabase, head);
-+		if (db->root != NULL && strcmp(db->root, name) == 0 && strcmp(db->role, type) == 0) {
++		if (db->root != NULL && strcmp(db->root, name) == 0 && (strcmp(db->role, type) == 0 || strcmp("read", type) == 0)) {
 +			if (server_number > 0 && count == server_number) {
 +				log_debug("Selected Database: %s", db->name);
 +				return db;
