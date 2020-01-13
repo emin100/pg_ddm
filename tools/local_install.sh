@@ -2,33 +2,43 @@
 
 PDIR=$( dirname "${BASH_SOURCE[0]}" )
 
-USERNAME=$1
+USERNAME=$2
 
 if [ "$USERNAME" == "" ];
 then
     USERNAME=`whoami`
 fi
 
-NEWINSTALL=$2
+NEWINSTALL=$3
 
 if [ "$NEWINSTALL" == "" ];
 then
     NEWINSTALL=0
 fi
 
+MAKEX=$3
+
+if [ "$MAKEX" == "" ];
+then
+    MAKEX=0
+fi
+
 cd $PDIR/../pgbouncer
 
-make clean
-make distclean
+if [ "$MAKEX" == "" ];
+then
 
-rm -rf $(find . -maxdepth 1 -type f -name "config.*" ! -name "*.mak.in") install-sh configure doc/pg_ddm.*
+    make clean
+    make distclean
 
-./autogen.sh
-./configure
-make -j4
-sudo make install
+    rm -rf $(find . -maxdepth 1 -type f -name "config.*" ! -name "*.mak.in") install-sh configure doc/pg_ddm.*
 
+    ./autogen.sh
+    ./configure
+    make -j4
+    sudo make install
 
+fi
 
 
 DDMPATH="/etc/pg_ddm"
