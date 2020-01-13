@@ -100,7 +100,7 @@ class PgQueryOpt
       #   end
       # end
       i = 0
-
+      # puts @query_parser.tree
       for query in @query_parser.tree
         @query_tree = query
         @query_tree.extend Hashie::Extensions::DeepFind
@@ -120,6 +120,9 @@ class PgQueryOpt
       return_sql = get_subsql('ctequery', return_sql)
 
       return_sql = get_subsql('subquery', return_sql)
+
+      # puts '-------------------------'
+      # puts @query_parser.tree
       # puts '-------------------------'
       # puts @tag_sql + return_sql
       # puts '-------------------------'
@@ -229,6 +232,20 @@ class PgQueryOpt
             k += 1
           end
         end
+
+        unless col['ResTarget']['val']['A_Expr'].nil?
+          rule = make_rules(col['ResTarget']['val']['A_Expr']['lexpr'], nil)
+          unless rule.nil?
+            # puts rule
+            @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i]['ResTarget']['val']['A_Expr']['lexpr']['ColumnRef']['fields'][0] = rule['ResTarget']['val']
+          end
+          rule = make_rules(col['ResTarget']['val']['A_Expr']['rexpr'], nil)
+          unless rule.nil?
+            # puts rule
+            @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i]['ResTarget']['val']['A_Expr']['rexpr']['ColumnRef']['fields'][0] = rule['ResTarget']['val']
+          end
+        end
+
         next if col['ResTarget']['val']['ColumnRef'].nil?
 
         rule = make_rules(col['ResTarget']['val'], col['ResTarget']['name'])
