@@ -16,7 +16,7 @@ then
     NEWINSTALL=0
 fi
 
-MAKEX=$3
+MAKEX=$1
 
 if [ "$MAKEX" == "" ];
 then
@@ -25,7 +25,7 @@ fi
 
 cd $PDIR/../pgbouncer
 
-if [ "$MAKEX" == "" ];
+if [ "$MAKEX" == "1" ];
 then
 
     make clean

@@ -32,12 +32,11 @@ class PgQueryOpt
     @etcd_passwd = etcd_passwd
     @user_regex  = user_regex
     @tag_regex   = tag_regex
-    if main_call
-      @default_scheme        = default_scheme
-      @default_scheme_tables = {}
-      @data_in_etcd          = {}
-    end
+    return nil unless main_call
 
+    @default_scheme        = default_scheme
+    @default_scheme_tables = {}
+    @data_in_etcd          = {}
   end
 
   def get_role(sql)
@@ -55,7 +54,6 @@ class PgQueryOpt
     else
       'master'
     end
-
   end
 
   def get_subsql(key, return_sql)
@@ -74,64 +72,62 @@ class PgQueryOpt
   end
 
   def get_sql
-    begin
-      @pass_tag = /#{@tag_regex}/.match(@sql)
-      return @sql if @pass_tag
+    @pass_tag = /#{@tag_regex}/.match(@sql)
+    return @sql if @pass_tag
 
-      #puts @sql
+    #puts @sql
 
-      @query_parser = PgQuery.parse(@sql)
-      @sql          = @sql.strip
-      @tag_sql      = /(?<=^\/\*)([^\*]*)(?=\*\/)/.match(@sql)
-      @tag_sql      = @tag_sql ? '/* ' + @tag_sql[1].strip + ' */' : ''
-      if @user_id.nil?
-        @user_id = /#{@user_regex}/.match(@sql)
+    @query_parser = PgQuery.parse(@sql)
+    @sql          = @sql.strip
+    @tag_sql      = /(?<=^\/\*)([^\*]*)(?=\*\/)/.match(@sql)
+    @tag_sql      = @tag_sql ? '/* ' + @tag_sql[1].strip + ' */' : ''
+    if @user_id.nil?
+      @user_id = /#{@user_regex}/.match(@sql)
 
-        @user_id = @user_id[1].strip if @user_id
-      end
-      # if @pass_tag
-      #   @pass_tag = @pass_tag[1].strip
-      #   conn_etcd
-      #   regex_tag = @etcd.get(@pass_tag)
-      #
-      #   if regex_tag.count > 0
-      #     regex_tag = regex_tag.kvs.first.value
-      #
-      #   end
-      # end
-      i = 0
-      # puts @query_parser.tree
-      for query in @query_parser.tree
-        @query_tree = query
-        @query_tree.extend Hashie::Extensions::DeepFind
-
-        resolve_stars
-        check_rules(nil)
-        add_filter
-
-        @query_parser.tree[i] = @query_tree
-        i                     += 1
-      end
-
-      return_sql = @query_parser.deparse
-
-      return_sql = get_subsql('subselect', return_sql)
-
-      return_sql = get_subsql('ctequery', return_sql)
-
-      return_sql = get_subsql('subquery', return_sql)
-
-      # puts '-------------------------'
-      # puts @query_parser.tree
-      # puts '-------------------------'
-      # puts @tag_sql + return_sql
-      # puts '-------------------------'
-      return @tag_sql + return_sql
-    rescue => e
-      puts e
-      puts e.backtrace.to_s
-      return @sql
+      @user_id = @user_id[1].strip if @user_id
     end
+    # if @pass_tag
+    #   @pass_tag = @pass_tag[1].strip
+    #   conn_etcd
+    #   regex_tag = @etcd.get(@pass_tag)
+    #
+    #   if regex_tag.count > 0
+    #     regex_tag = regex_tag.kvs.first.value
+    #
+    #   end
+    # end
+    i = 0
+    # puts @query_parser.tree
+    for query in @query_parser.tree
+      @query_tree = query
+      @query_tree.extend Hashie::Extensions::DeepFind
+
+      resolve_stars
+      check_rules(nil)
+      add_filter
+
+      @query_parser.tree[i] = @query_tree
+      i                     += 1
+    end
+
+    return_sql = @query_parser.deparse
+
+    return_sql = get_subsql('subselect', return_sql)
+
+    return_sql = get_subsql('ctequery', return_sql)
+
+    return_sql = get_subsql('subquery', return_sql)
+
+    puts '-------------------------'
+    puts @query_parser.tree
+    puts '-------------------------'
+    puts @tag_sql + return_sql
+    puts '-------------------------'
+    return @tag_sql + return_sql
+  rescue => e
+    puts e
+    puts e.backtrace.to_s
+    return @sql
   end
 
   def etcd_data(filter_id)
@@ -144,7 +140,6 @@ class PgQueryOpt
   end
 
   def check_default_scheme(schema, table, p)
-
     column = if schema.nil?
                if table.include? '.'
                  table
@@ -234,15 +229,30 @@ class PgQueryOpt
         end
 
         unless col['ResTarget']['val']['A_Expr'].nil?
-          rule = make_rules(col['ResTarget']['val']['A_Expr']['lexpr'], nil)
-          unless rule.nil?
-            # puts rule
-            @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i]['ResTarget']['val']['A_Expr']['lexpr']['ColumnRef']['fields'][0] = rule['ResTarget']['val']
+          unless col['ResTarget']['val']['A_Expr']['lexpr'].nil?
+            if col['ResTarget']['val']['A_Expr']['lexpr']['FuncCall'].nil?
+              rule = make_rules(col['ResTarget']['val']['A_Expr']['lexpr'], nil)
+              unless rule.nil?
+                # if col_ref['FuncCall'].nil?
+                # puts rule
+                @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i]['ResTarget']['val']['A_Expr']['lexpr']['ColumnRef']['fields'][0] = rule['ResTarget']['val']
+              end
+            else
+              check_rules(col['ResTarget']['val']['A_Expr']['lexpr']['FuncCall']['args'])
+            end
           end
-          rule = make_rules(col['ResTarget']['val']['A_Expr']['rexpr'], nil)
-          unless rule.nil?
-            # puts rule
-            @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i]['ResTarget']['val']['A_Expr']['rexpr']['ColumnRef']['fields'][0] = rule['ResTarget']['val']
+
+          unless col['ResTarget']['val']['A_Expr']['rexpr'].nil?
+            if col['ResTarget']['val']['A_Expr']['rexpr']['FuncCall'].nil?
+              rule = make_rules(col['ResTarget']['val']['A_Expr']['rexpr'], nil)
+              unless rule.nil?
+                # if col_ref['FuncCall'].nil?
+                # puts rule
+                @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i]['ResTarget']['val']['A_Expr']['rexpr']['ColumnRef']['fields'][0] = rule['ResTarget']['val']
+              end
+            else
+              check_rules(col['ResTarget']['val']['A_Expr']['rexpr']['FuncCall']['args'])
+            end
           end
         end
 
@@ -398,7 +408,6 @@ class PgQueryOpt
       end
     end
     return_column_ref
-
   end
 
   def conn_etcd
@@ -477,12 +486,12 @@ class PgQueryOpt
         for k in @query_tree['RawStmt']['stmt']['SelectStmt']['fromClause']
           if !k['JoinExpr'].nil?
             k.extend Hashie::Extensions::DeepFind
-            if !k.deep_find('subquery')
-              for x in k.deep_find_all('RangeVar')
-                if x['schemaname'].nil?
-                  table_list.push(x['relname'])
+            unless k.deep_find('subquery')
+              k.deep_find_all('RangeVar').each do |find_tables|
+                if find_tables['schemaname'].nil?
+                  table_list.push(find_tables['relname'])
                 else
-                  table_list.push(x['schemaname'] + '.' + x['relname'])
+                  table_list.push(find_tables['schemaname'] + '.' + find_tables['relname'])
                 end
               end
             end
@@ -520,13 +529,13 @@ class PgQueryOpt
                   all_fields.concat(get_col_list_in_etcd(change_col_names_for_etcd(table), table_alias, col_alias))
                 end
               else
-                col_names = []
-                last_add  = false
+                col_names   = []
+                last_add    = false
                 search_area = @query_tree['RawStmt']['stmt']['SelectStmt']['fromClause']
                 search_area.extend Hashie::Extensions::DeepFind
 
                 search_area.deep_find_all('RangeVar').each do |val|
-                  table       = check_default_scheme(val['schemaname'],val['relname'],'.')
+                  table = check_default_scheme(val['schemaname'], val['relname'], '.')
 
                   table_alias = if val['alias'].nil?
                                   table
