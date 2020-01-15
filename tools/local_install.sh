@@ -52,8 +52,6 @@ if [ ! -f $DDMPATH/pg_ddm.ini ] || [ $NEWINSTALL -eq 1 ];
 then
     sudo cp -R  pgbouncer/etc/pg_ddm.ini pgbouncer/etc/userlist.txt  $DDMPATH/
 fi
-
-
 sudo mkdir -p /var/log/pg_ddm
 sudo mkdir -p /var/run/pg_ddm
 
