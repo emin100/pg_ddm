@@ -35,7 +35,6 @@ class PgQueryOpt
     return nil unless main_call
 
     @default_scheme        = default_scheme
-    puts default_scheme
     @default_scheme_tables = {}
     @data_in_etcd          = {}
   end
@@ -119,11 +118,11 @@ class PgQueryOpt
 
     return_sql = get_subsql('subquery', return_sql)
 
-    puts '-------------------------'
-    puts @query_parser.tree
-    puts '-------------------------'
-    puts @tag_sql + return_sql
-    puts '-------------------------'
+    #puts '-------------------------'
+    #puts @query_parser.tree
+    #puts '-------------------------'
+    #puts @tag_sql + return_sql
+    #puts '-------------------------'
     return @tag_sql + return_sql
   rescue => e
     puts e
