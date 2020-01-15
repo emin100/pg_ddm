@@ -35,11 +35,11 @@ then
 
     ./autogen.sh
     ./configure
-    make -j4
-    sudo make install
 
 fi
 
+make -j4
+sudo make install
 
 DDMPATH="/etc/pg_ddm"
 

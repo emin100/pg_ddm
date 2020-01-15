@@ -35,6 +35,7 @@ class PgQueryOpt
     return nil unless main_call
 
     @default_scheme        = default_scheme
+    puts default_scheme
     @default_scheme_tables = {}
     @data_in_etcd          = {}
   end

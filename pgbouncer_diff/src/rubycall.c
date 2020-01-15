@@ -123,7 +123,8 @@ struct query_return rubycall(PgSocket *client, char *username, char *query_str) 
 	q.etcd_passwd = rb_str_new_cstr(cf_etcd_passwd);
 	q.user_regex = rb_str_new_cstr(cf_user_regex);
 	q.tag_regex = rb_str_new_cstr(cf_tag_regex);
-	q.default_scheme = rb_str_new_cstr("ktv, public");
+	q.default_scheme = rb_str_new_cstr(client->pool->db->search_path);
+
 
 	res = rb_protect(embeded, (VALUE) (&q), &state);
 

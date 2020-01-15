@@ -78,7 +78,6 @@ bool rewrite_query(PgSocket *client, PktHdr *pkt) {
 		return true;
 
 	if (cf_pg_ddm_enabled) {
-
         /* call ruby function to rewrite the query */
         qr = rubycall(client, client->auth_user->name, query_str);
         tmp_new_query_str = qr.query;

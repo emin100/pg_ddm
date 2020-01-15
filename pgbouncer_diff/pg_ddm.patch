@@ -192,7 +192,7 @@ index 049f636..ab9ff63 100644
 -	make -C ../../pgbouncer.github.io
 +	make -C ../../pg_ddm.github.io
 diff --git a/include/bouncer.h b/include/bouncer.h
-index 45795e0..61ac673 100644
+index 45795e0..66697c6 100644
 --- a/include/bouncer.h
 +++ b/include/bouncer.h
 @@ -87,6 +87,8 @@ typedef struct ScramState ScramState;
@@ -204,7 +204,7 @@ index 45795e0..61ac673 100644
  #include "util.h"
  #include "iobuf.h"
  #include "sbuf.h"
-@@ -332,6 +334,10 @@ struct PgDatabase {
+@@ -332,6 +334,11 @@ struct PgDatabase {
  	int connection_count;	/* total connections for this database in all pools */
  
  	struct AATree user_tree;	/* users that have been queried on this database */
@@ -212,10 +212,11 @@ index 45795e0..61ac673 100644
 +	char *role;
 +	char *root;
 +	int route;
++	char *search_path;
  };
  
  
-@@ -516,6 +522,15 @@ extern char *cf_server_tls_ca_file;
+@@ -516,6 +523,15 @@ extern char *cf_server_tls_ca_file;
  extern char *cf_server_tls_cert_file;
  extern char *cf_server_tls_key_file;
  extern char *cf_server_tls_ciphers;
@@ -284,33 +285,38 @@ index acaa9a1..c35f7b8 100644
  	if (!find_server(client))
  		return false;
 diff --git a/src/loader.c b/src/loader.c
-index 016ce9f..131e730 100644
+index 016ce9f..8248d26 100644
 --- a/src/loader.c
 +++ b/src/loader.c
-@@ -199,6 +199,9 @@ bool parse_database(void *base, const char *name, const char *connstr)
+@@ -199,6 +199,10 @@ bool parse_database(void *base, const char *name, const char *connstr)
  	char *timezone = NULL;
  	char *connect_query = NULL;
  	char *appname = NULL;
 +	char *root = NULL;
 +	char *role = "master";
 +	int route = 0;
++	char *search_path = "public";
  
  	int v_port;
  
-@@ -226,6 +229,12 @@ bool parse_database(void *base, const char *name, const char *connstr)
+@@ -226,7 +230,15 @@ bool parse_database(void *base, const char *name, const char *connstr)
  
  		if (strcmp("dbname", key) == 0) {
  			dbname = val;
+-		} else if (strcmp("host", key) == 0) {
 +		} else if (strcmp("root", key) == 0) {
 +			root = val;
 +		} else if (strcmp("role", key) == 0) {
 +			role = val;
 +		} else if (strcmp("route", key) == 0) {
-+			route = atoi(val);
- 		} else if (strcmp("host", key) == 0) {
++            route = atoi(val);
++        }  else if (strcmp("search_path", key) == 0) {
++        	search_path = val;
++        } else if (strcmp("host", key) == 0) {
  			host = val;
  		} else if (strcmp("port", key) == 0) {
-@@ -288,6 +297,16 @@ bool parse_database(void *base, const char *name, const char *connstr)
+ 			port = val;
+@@ -288,6 +300,20 @@ bool parse_database(void *base, const char *name, const char *connstr)
  		}
  	}
  
@@ -320,6 +326,10 @@ index 016ce9f..131e730 100644
 +
 +	if(role){
 +		db->role = strdup(role);
++	}
++
++	if(search_path){
++		db->search_path = strdup(search_path);
 +	}
 +
 +	db->route = route;
