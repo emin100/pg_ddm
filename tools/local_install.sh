@@ -55,6 +55,5 @@ fi
 sudo mkdir -p /var/log/pg_ddm
 sudo mkdir -p /var/run/pg_ddm
 
-
 sudo chown -R $USERNAME:$USERNAME /var/log/pg_ddm /var/run/pg_ddm $DDMPATH
 
