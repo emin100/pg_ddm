@@ -72,62 +72,64 @@ class PgQueryOpt
   end
 
   def get_sql
-    @pass_tag = /#{@tag_regex}/.match(@sql)
-    return @sql if @pass_tag
+    begin
+      @pass_tag = /#{@tag_regex}/.match(@sql)
+      return @sql if @pass_tag
 
-    #puts @sql
+      #puts @sql
 
-    @query_parser = PgQuery.parse(@sql)
-    @sql          = @sql.strip
-    @tag_sql      = /(?<=^\/\*)([^\*]*)(?=\*\/)/.match(@sql)
-    @tag_sql      = @tag_sql ? '/* ' + @tag_sql[1].strip + ' */' : ''
-    if @user_id.nil?
-      @user_id = /#{@user_regex}/.match(@sql)
+      @query_parser = PgQuery.parse(@sql)
+      @sql          = @sql.strip
+      @tag_sql      = /(?<=^\/\*)([^\*]*)(?=\*\/)/.match(@sql)
+      @tag_sql      = @tag_sql ? '/* ' + @tag_sql[1].strip + ' */' : ''
+      if @user_id.nil?
+        @user_id = /#{@user_regex}/.match(@sql)
 
-      @user_id = @user_id[1].strip if @user_id
+        @user_id = @user_id[1].strip if @user_id
+      end
+      # if @pass_tag
+      #   @pass_tag = @pass_tag[1].strip
+      #   conn_etcd
+      #   regex_tag = @etcd.get(@pass_tag)
+      #
+      #   if regex_tag.count > 0
+      #     regex_tag = regex_tag.kvs.first.value
+      #
+      #   end
+      # end
+      i = 0
+      # puts @query_parser.tree
+      for query in @query_parser.tree
+        @query_tree = query
+        @query_tree.extend Hashie::Extensions::DeepFind
+
+        resolve_stars
+        check_rules(nil)
+        add_filter
+
+        @query_parser.tree[i] = @query_tree
+        i                     += 1
+      end
+
+      return_sql = @query_parser.deparse
+
+      return_sql = get_subsql('subselect', return_sql)
+
+      return_sql = get_subsql('ctequery', return_sql)
+
+      return_sql = get_subsql('subquery', return_sql)
+
+      #puts '-------------------------'
+      #puts @query_parser.tree
+      #puts '-------------------------'
+      #puts @tag_sql + return_sql
+      #puts '-------------------------'
+      return @tag_sql + return_sql
+    rescue => e
+      puts e
+      puts e.backtrace.to_s
+      return @sql
     end
-    # if @pass_tag
-    #   @pass_tag = @pass_tag[1].strip
-    #   conn_etcd
-    #   regex_tag = @etcd.get(@pass_tag)
-    #
-    #   if regex_tag.count > 0
-    #     regex_tag = regex_tag.kvs.first.value
-    #
-    #   end
-    # end
-    i = 0
-    # puts @query_parser.tree
-    for query in @query_parser.tree
-      @query_tree = query
-      @query_tree.extend Hashie::Extensions::DeepFind
-
-      resolve_stars
-      check_rules(nil)
-      add_filter
-
-      @query_parser.tree[i] = @query_tree
-      i                     += 1
-    end
-
-    return_sql = @query_parser.deparse
-
-    return_sql = get_subsql('subselect', return_sql)
-
-    return_sql = get_subsql('ctequery', return_sql)
-
-    return_sql = get_subsql('subquery', return_sql)
-
-    #puts '-------------------------'
-    #puts @query_parser.tree
-    #puts '-------------------------'
-    #puts @tag_sql + return_sql
-    #puts '-------------------------'
-    return @tag_sql + return_sql
-  rescue => e
-    puts e
-    puts e.backtrace.to_s
-    return @sql
   end
 
   def etcd_data(filter_id)
