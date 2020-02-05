@@ -508,7 +508,6 @@ class PgQueryOpt
 
       end
 
-
       get_column_list.each do |name|
         i     = 0
         field = []
@@ -520,41 +519,45 @@ class PgQueryOpt
           field_list = name['ResTarget']['val']['ColumnRef']['fields']
           field_list.each do |list|
             if list['A_Star']
-              if i == 1
-                table_alias = field_list[0]['String']['str']
-                table       = @query_parser.aliases[table_alias]
-                if table.nil?
-                  cvcv = []
-                  cvcv.push(nil)
-                  all_fields.concat([cvcv.concat(field_list)])
+              if table_list.count > 0
+                if i == 1
+                  table_alias = field_list[0]['String']['str']
+                  table       = @query_parser.aliases[table_alias]
+                  if table.nil?
+                    cvcv = []
+                    cvcv.push(nil)
+                    all_fields.concat([cvcv.concat(field_list)])
+                  else
+                    all_fields.concat(get_col_list_in_etcd(change_col_names_for_etcd(table), table_alias, col_alias))
+                  end
                 else
-                  all_fields.concat(get_col_list_in_etcd(change_col_names_for_etcd(table), table_alias, col_alias))
+                  col_names   = []
+                  last_add    = false
+                  search_area = @query_tree['RawStmt']['stmt']['SelectStmt']['fromClause']
+                  search_area.extend Hashie::Extensions::DeepFind
+
+                  search_area.deep_find_all('RangeVar').each do |val|
+                    table = check_default_scheme(val['schemaname'], val['relname'], '.')
+
+                    table_alias = if val['alias'].nil?
+                                    table
+                                  else
+                                    val['alias']['Alias']['aliasname']
+                                  end
+                    col_names   = get_col_list_in_etcd(change_col_names_for_etcd(table), table_alias, col_alias)
+
+                    if col_names.nil? || col_names.count.zero?
+                      last_add = true
+                      all_fields.push(list)
+                    else
+                      last_add = false
+                      all_fields.concat(col_names)
+                    end
+                  end
+                  all_fields.push(list) if (col_names.nil? || col_names.count.zero?) && last_add == false
                 end
               else
-                col_names   = []
-                last_add    = false
-                search_area = @query_tree['RawStmt']['stmt']['SelectStmt']['fromClause']
-                search_area.extend Hashie::Extensions::DeepFind
-
-                search_area.deep_find_all('RangeVar').each do |val|
-                  table = check_default_scheme(val['schemaname'], val['relname'], '.')
-
-                  table_alias = if val['alias'].nil?
-                                  table
-                                else
-                                  val['alias']['Alias']['aliasname']
-                                end
-                  col_names   = get_col_list_in_etcd(change_col_names_for_etcd(table), table_alias, col_alias)
-
-                  if col_names.nil? || col_names.count.zero?
-                    last_add = true
-                    all_fields.push(list)
-                  else
-                    last_add = false
-                    all_fields.concat(col_names)
-                  end
-                end
-                all_fields.push(list) if (col_names.nil? || col_names.count.zero?) && last_add == false
+                all_fields.push(list)
               end
               field = []
             else
