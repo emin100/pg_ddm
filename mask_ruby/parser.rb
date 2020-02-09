@@ -50,7 +50,10 @@ class PgQueryOpt
     tree.extend Hashie::Extensions::DeepFind
     keys  = tree.deep_find_all('FuncCall')
     keys2 = tree.deep_find_all('TransactionStmt')
-    if keys.nil? && keys2.nil?
+    keys3 = tree.deep_find_all('SelectStmt')
+
+
+    if keys.nil? && keys2.nil? && !keys3.nil?
       'read'
     else
       'master'
