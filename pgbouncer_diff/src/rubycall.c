@@ -129,8 +129,8 @@ struct query_return rubycall(PgSocket *client, char *username, char *query_str) 
 	res = rb_protect(embeded, (VALUE) (&q), &state);
 
 	if (state) {
-		slog_error(client, "Error when executed ruby code");
-		ruby_cleanup(state);
+		slog_error(client, "Error when executed ruby code 1: %s", query_str);
+//		ruby_cleanup(state);
 		return qr;
 	} else {
 		if (TYPE(res) == T_STRING) {
@@ -138,8 +138,8 @@ struct query_return rubycall(PgSocket *client, char *username, char *query_str) 
 			if(cf_pg_ddm_rewrite_route){
                 res = rb_protect(embeded_role, (VALUE) (&q), &state);
                 if (state) {
-                    slog_error(client, "Error when executed ruby code");
-                    ruby_cleanup(state);
+                    slog_error(client, "Error when executed ruby code 2: %s", query_str);
+//                    ruby_cleanup(state);
                     return qr;
                 } else {
                     if (TYPE(res) == T_STRING) {

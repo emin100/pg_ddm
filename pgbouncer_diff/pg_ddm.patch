@@ -285,7 +285,7 @@ index acaa9a1..c35f7b8 100644
  	if (!find_server(client))
  		return false;
 diff --git a/src/loader.c b/src/loader.c
-index 016ce9f..8248d26 100644
+index 016ce9f..34ae128 100644
 --- a/src/loader.c
 +++ b/src/loader.c
 @@ -199,6 +199,10 @@ bool parse_database(void *base, const char *name, const char *connstr)
@@ -311,7 +311,7 @@ index 016ce9f..8248d26 100644
 +		} else if (strcmp("route", key) == 0) {
 +            route = atoi(val);
 +        }  else if (strcmp("search_path", key) == 0) {
-+        	search_path = val;
++            search_path = val;
 +        } else if (strcmp("host", key) == 0) {
  			host = val;
  		} else if (strcmp("port", key) == 0) {
