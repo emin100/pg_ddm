@@ -2,7 +2,7 @@ require 'pg_query'
 require 'json'
 require 'etcdv3'
 require 'hashie'
-#require 'awesome_print'
+# require 'awesome_print'
 
 class PgQueryOpt
   @etcd                  = nil
@@ -61,19 +61,27 @@ class PgQueryOpt
   end
 
   def get_subsql(key, return_sql)
-    common = @query_tree.deep_find_all(key)
-    unless common.nil?
-      common.each do |i|
+    unless key.nil?
+      common = @query_tree.deep_find_all(key)
+      unless common.nil?
+        common.each do |i|
 
-        subselect_sql = @query_parser.deparse([i])
-        #ap '-------------------------'
-        #ap subselect_sql
-        #ap '+++++++++++++++++++++++++'
+          subselect_sql = @query_parser.deparse([i])
+          # ap '-------------------------'
+          # ap subselect_sql
+          # ap '+++++++++++++++++++++++++'
 
-        set_prop(subselect_sql, @username, @db, @etcd_host, @etcd_port, @etcd_user, @etcd_passwd, @user_regex, @tag_regex, @default_scheme, false)
+          set_prop(subselect_sql, @username, @db, @etcd_host, @etcd_port, @etcd_user, @etcd_passwd, @user_regex, @tag_regex, @default_scheme, false)
 
-        subselect_sql_changed = get_sql
-        return_sql            = return_sql.gsub subselect_sql, subselect_sql_changed
+          subselect_sql_changed = get_sql
+
+          # ap '------------xxx-------------'
+          # ap subselect_sql
+          # ap '****************************'
+          # ap subselect_sql_changed
+          # ap '+++++++++++++++++++++++++'
+          return_sql = return_sql.gsub subselect_sql, subselect_sql_changed
+        end
       end
     end
     return_sql
@@ -121,11 +129,27 @@ class PgQueryOpt
 
       return_sql = @query_parser.deparse
 
+      # ap '--------1-----------------'
+      # ap return_sql
+      # ap '+++++++++++++++++++++++++'
+
       return_sql = get_subsql('subselect', return_sql)
+
+      # ap '--------2-----------------'
+      # ap return_sql
+      # ap '+++++++++++++++++++++++++'
 
       return_sql = get_subsql('ctequery', return_sql)
 
+      # ap '--------3-----------------'
+      # ap return_sql
+      # ap '+++++++++++++++++++++++++'
+
       return_sql = get_subsql('subquery', return_sql)
+
+      # ap '--------4-----------------'
+      # ap return_sql
+      # ap '+++++++++++++++++++++++++'
 
       #puts '-------------------------'
       #puts @query_parser.tree
@@ -580,7 +604,9 @@ class PgQueryOpt
         end
       end
     end
-    star_column(all_fields)
+    if all_fields.count > 0
+      star_column(all_fields)
+    end
     all_fields
   end
 
