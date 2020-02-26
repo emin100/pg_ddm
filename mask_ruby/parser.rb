@@ -2,7 +2,7 @@ require 'pg_query'
 require 'json'
 require 'etcdv3'
 require 'hashie'
-# require 'awesome_print'
+#require 'awesome_print'
 
 class PgQueryOpt
   @etcd                  = nil
@@ -67,19 +67,9 @@ class PgQueryOpt
         common.each do |i|
 
           subselect_sql = @query_parser.deparse([i])
-          # ap '-------------------------'
-          # ap subselect_sql
-          # ap '+++++++++++++++++++++++++'
-
           set_prop(subselect_sql, @username, @db, @etcd_host, @etcd_port, @etcd_user, @etcd_passwd, @user_regex, @tag_regex, @default_scheme, false)
-
           subselect_sql_changed = get_sql
 
-          # ap '------------xxx-------------'
-          # ap subselect_sql
-          # ap '****************************'
-          # ap subselect_sql_changed
-          # ap '+++++++++++++++++++++++++'
           return_sql = return_sql.gsub subselect_sql, subselect_sql_changed
         end
       end
@@ -114,7 +104,6 @@ class PgQueryOpt
       #   end
       # end
       i = 0
-      # puts @query_parser.tree
       for query in @query_parser.tree
         @query_tree = query
         @query_tree.extend Hashie::Extensions::DeepFind
@@ -128,34 +117,10 @@ class PgQueryOpt
       end
 
       return_sql = @query_parser.deparse
-
-      # ap '--------1-----------------'
-      # ap return_sql
-      # ap '+++++++++++++++++++++++++'
-
       return_sql = get_subsql('subselect', return_sql)
-
-      # ap '--------2-----------------'
-      # ap return_sql
-      # ap '+++++++++++++++++++++++++'
-
       return_sql = get_subsql('ctequery', return_sql)
-
-      # ap '--------3-----------------'
-      # ap return_sql
-      # ap '+++++++++++++++++++++++++'
-
       return_sql = get_subsql('subquery', return_sql)
-
-      # ap '--------4-----------------'
-      # ap return_sql
-      # ap '+++++++++++++++++++++++++'
-
-      #puts '-------------------------'
-      #puts @query_parser.tree
-      #puts '-------------------------'
-      #puts @tag_sql + return_sql
-      #puts '-------------------------'
+      
       return @tag_sql + return_sql
     rescue => e
       puts e
@@ -241,6 +206,44 @@ class PgQueryOpt
     end
   end
 
+  def check_exp(column_ref)
+    unless column_ref['A_Expr'].nil?
+      unless column_ref['A_Expr']['lexpr'].nil?
+        if column_ref['A_Expr']['lexpr']['A_Expr']
+          column_ref['A_Expr']['lexpr'] = check_exp(column_ref['A_Expr']['lexpr'])
+        end
+        if column_ref['A_Expr']['lexpr']['FuncCall'].nil?
+          rule = make_rules(column_ref['A_Expr']['lexpr'], nil)
+          unless rule.nil?
+            # if col_ref['FuncCall'].nil?
+            # puts rule
+            column_ref['A_Expr']['lexpr']['ColumnRef']['fields'][0] = rule['ResTarget']['val']
+          end
+        else
+          column_ref['A_Expr']['lexpr']['FuncCall']['args'] = check_rules(column_ref['A_Expr']['lexpr']['FuncCall']['args'])
+        end
+      end
+
+      unless column_ref['A_Expr']['rexpr'].nil?
+
+        if column_ref['A_Expr']['rexpr']['A_Expr']
+          column_ref['A_Expr']['rexpr'] = check_exp(column_ref['A_Expr']['rexpr'])
+        end
+        if column_ref['A_Expr']['rexpr']['FuncCall'].nil?
+          rule = make_rules(column_ref['A_Expr']['rexpr'], nil)
+          unless rule.nil?
+            # if col_ref['FuncCall'].nil?
+            # puts rule
+            column_ref['A_Expr']['rexpr']['ColumnRef']['fields'][0] = rule['ResTarget']['val']
+          end
+        else
+          column_ref['A_Expr']['rexpr']['FuncCall']['args'] = check_rules(column_ref['A_Expr']['rexpr']['FuncCall']['args'])
+        end
+      end
+    end
+    column_ref
+  end
+
   def check_rules(column_ref)
     if column_ref.nil?
       list = get_column_list
@@ -262,33 +265,8 @@ class PgQueryOpt
           end
         end
 
-        unless col['ResTarget']['val']['A_Expr'].nil?
-          unless col['ResTarget']['val']['A_Expr']['lexpr'].nil?
-            if col['ResTarget']['val']['A_Expr']['lexpr']['FuncCall'].nil?
-              rule = make_rules(col['ResTarget']['val']['A_Expr']['lexpr'], nil)
-              unless rule.nil?
-                # if col_ref['FuncCall'].nil?
-                # puts rule
-                @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i]['ResTarget']['val']['A_Expr']['lexpr']['ColumnRef']['fields'][0] = rule['ResTarget']['val']
-              end
-            else
-              check_rules(col['ResTarget']['val']['A_Expr']['lexpr']['FuncCall']['args'])
-            end
-          end
+        @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i]['ResTarget']['val'] = check_exp(col['ResTarget']['val'])
 
-          unless col['ResTarget']['val']['A_Expr']['rexpr'].nil?
-            if col['ResTarget']['val']['A_Expr']['rexpr']['FuncCall'].nil?
-              rule = make_rules(col['ResTarget']['val']['A_Expr']['rexpr'], nil)
-              unless rule.nil?
-                # if col_ref['FuncCall'].nil?
-                # puts rule
-                @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i]['ResTarget']['val']['A_Expr']['rexpr']['ColumnRef']['fields'][0] = rule['ResTarget']['val']
-              end
-            else
-              check_rules(col['ResTarget']['val']['A_Expr']['rexpr']['FuncCall']['args'])
-            end
-          end
-        end
 
         next if col['ResTarget']['val']['ColumnRef'].nil?
 
@@ -305,6 +283,7 @@ class PgQueryOpt
       j = 0
       column_ref.each do |col_ref|
         check_rules(col_ref['FuncCall']['args']) unless col_ref['FuncCall'].nil?
+        col_ref = check_exp(col_ref)
         rules = make_rules(col_ref, nil)
         next if rules.nil?
 
