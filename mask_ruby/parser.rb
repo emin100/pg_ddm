@@ -2,7 +2,7 @@ require 'pg_query'
 require 'json'
 require 'etcdv3'
 require 'hashie'
-#require 'awesome_print'
+# require 'awesome_print'
 
 class PgQueryOpt
   @etcd                  = nil
@@ -120,7 +120,8 @@ class PgQueryOpt
       return_sql = get_subsql('subselect', return_sql)
       return_sql = get_subsql('ctequery', return_sql)
       return_sql = get_subsql('subquery', return_sql)
-      
+
+
       return @tag_sql + return_sql
     rescue => e
       puts e
@@ -207,6 +208,7 @@ class PgQueryOpt
   end
 
   def check_exp(column_ref)
+
     unless column_ref['A_Expr'].nil?
       unless column_ref['A_Expr']['lexpr'].nil?
         if column_ref['A_Expr']['lexpr']['A_Expr']
@@ -215,9 +217,8 @@ class PgQueryOpt
         if column_ref['A_Expr']['lexpr']['FuncCall'].nil?
           rule = make_rules(column_ref['A_Expr']['lexpr'], nil)
           unless rule.nil?
-            # if col_ref['FuncCall'].nil?
-            # puts rule
             column_ref['A_Expr']['lexpr']['ColumnRef']['fields'][0] = rule['ResTarget']['val']
+            column_ref['A_Expr']['lexpr']['ColumnRef']['fields'].delete_at(1) if column_ref['A_Expr']['lexpr']['ColumnRef']['fields'].count > 1
           end
         else
           column_ref['A_Expr']['lexpr']['FuncCall']['args'] = check_rules(column_ref['A_Expr']['lexpr']['FuncCall']['args'])
@@ -232,9 +233,8 @@ class PgQueryOpt
         if column_ref['A_Expr']['rexpr']['FuncCall'].nil?
           rule = make_rules(column_ref['A_Expr']['rexpr'], nil)
           unless rule.nil?
-            # if col_ref['FuncCall'].nil?
-            # puts rule
             column_ref['A_Expr']['rexpr']['ColumnRef']['fields'][0] = rule['ResTarget']['val']
+            column_ref['A_Expr']['rexpr']['ColumnRef']['fields'].delete_at(1) if column_ref['A_Expr']['rexpr']['ColumnRef']['fields'].count > 1
           end
         else
           column_ref['A_Expr']['rexpr']['FuncCall']['args'] = check_rules(column_ref['A_Expr']['rexpr']['FuncCall']['args'])
