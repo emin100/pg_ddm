@@ -82,8 +82,6 @@ class PgQueryOpt
       @pass_tag = /#{@tag_regex}/.match(@sql)
       return @sql if @pass_tag
 
-      #puts @sql
-
       @query_parser = PgQuery.parse(@sql)
       @sql          = @sql.strip
       @tag_sql      = /(?<=^\/\*)([^\*]*)(?=\*\/)/.match(@sql)
@@ -216,7 +214,7 @@ class PgQueryOpt
         end
         if column_ref['A_Expr']['lexpr']['FuncCall'].nil?
           rule = make_rules(column_ref['A_Expr']['lexpr'], nil)
-          unless rule.nil?
+          unless rule.nil? || rule.empty?
             column_ref['A_Expr']['lexpr']['ColumnRef']['fields'][0] = rule['ResTarget']['val']
             column_ref['A_Expr']['lexpr']['ColumnRef']['fields'].delete_at(1) if column_ref['A_Expr']['lexpr']['ColumnRef']['fields'].count > 1
           end
@@ -284,7 +282,7 @@ class PgQueryOpt
       column_ref.each do |col_ref|
         check_rules(col_ref['FuncCall']['args']) unless col_ref['FuncCall'].nil?
         col_ref = check_exp(col_ref)
-        rules = make_rules(col_ref, nil)
+        rules   = make_rules(col_ref, nil)
         next if rules.nil?
 
         if rules['del'].nil?
@@ -329,11 +327,13 @@ class PgQueryOpt
       end
     elsif col_detail.count == 1
       @query_parser.tables.each do |table|
-        xx            = etcd_data(change_col_names_for_etcd(table))
-        col_detail[0] = col_detail[0]['String']['str'] unless col_detail[0].is_a?(String)
-        if JSON.parse(xx.kvs.first.value).select { |h| h['column_name'] == col_detail[0] }.count > 0
-          col_prefix    = change_col_names_for_etcd(table)
-          col_name_last = col_detail[0]
+        xx = etcd_data(change_col_names_for_etcd(table))
+        if xx.count > 0
+          col_detail[0] = col_detail[0]['String']['str'] unless col_detail[0].is_a?(String)
+          if JSON.parse(xx.kvs.first.value).select { |h| h['column_name'] == col_detail[0] }.count > 0
+            col_prefix    = change_col_names_for_etcd(table)
+            col_name_last = col_detail[0]
+          end
         end
       end
 
