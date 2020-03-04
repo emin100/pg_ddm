@@ -51,24 +51,27 @@ RUN echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/11/main/pg_hba.con
 # And add ``listen_addresses`` to ``/etc/postgresql/11/main/postgresql.conf``
 RUN echo "listen_addresses='*'" >> /etc/postgresql/11/main/postgresql.conf
 
-
 USER root
-RUN mkdir /etc/pgbouncer
+RUN useradd -ms /bin/bash pg_ddm
+
+
+
+#RUN mkdir /etc/pgbouncer
 
 
 ADD tools/install.sh /usr/bin/
-RUN /usr/bin/install.sh /var/lib/postgresql
-
+RUN /usr/bin/install.sh /home/pg_ddm 1 pg_ddm 1
+#
 ADD tools/control-change.sh /usr/bin/
-
-RUN chown -R postgres:postgres /etc/pgbouncer
-RUN mkdir /var/run/pgbouncer && chown postgres:postgres /var/run/pgbouncer
-RUN mkdir /var/log/pgbouncer && chown postgres:postgres /var/log/pgbouncer
-
-
+#
+#RUN chown -R postgres:postgres /etc/pgbouncer
+#RUN mkdir /var/run/pgbouncer && chown postgres:postgres /var/run/pgbouncer
+#RUN mkdir /var/log/pgbouncer && chown postgres:postgres /var/log/pgbouncer
 
 
-WORKDIR /etc/pgbouncer
+
+
+#WORKDIR /etc/pgbouncer
 
 
 # Expose the PostgreSQL port
