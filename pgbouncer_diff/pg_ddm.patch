@@ -1,8 +1,8 @@
 diff --git a/.gitignore b/.gitignore
-index 784794c..3ee459e 100644
+index a0eb45e..c5c5352 100644
 --- a/.gitignore
 +++ b/.gitignore
-@@ -28,3 +28,7 @@
+@@ -27,3 +27,7 @@
  *.exe
  *.gz
  *.swp
@@ -11,7 +11,7 @@ index 784794c..3ee459e 100644
 +.cproject
 +.settings
 diff --git a/Makefile b/Makefile
-index 7a07e11..83b3e41 100644
+index 9884dd8..cf2deae 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -1,9 +1,9 @@
@@ -44,14 +44,12 @@ index 7a07e11..83b3e41 100644
  	include/sbuf.h \
  	include/scram.h \
  	include/server.h \
-@@ -58,19 +62,21 @@ pgbouncer_SOURCES = \
+@@ -58,19 +62,19 @@ pgbouncer_SOURCES = \
  	include/common/unicode_norm.h \
  	include/common/unicode_norm_table.h
  
 -pgbouncer_CPPFLAGS = -Iinclude $(CARES_CFLAGS) $(LIBEVENT_CFLAGS) $(TLS_CPPFLAGS)
-+#pgbouncer_CPPFLAGS = -Iinclude $(CARES_CFLAGS) $(LIBEVENT_CFLAGS) $(TLS_CPPFLAGS)
-+ruby_CPPFLAGS = $(shell pkg-config --cflags ruby)
-+pg_ddm_CPPFLAGS = -Iinclude $(CARES_CFLAGS) $(LIBEVENT_CFLAGS) $(TLS_CPPFLAGS) $(ruby_CPPFLAGS)
++pg_ddm_CPPFLAGS = -Iinclude $(CARES_CFLAGS) $(LIBEVENT_CFLAGS) $(shell pkg-config --cflags ruby)
  
  # include libusual sources directly
  AM_FEATURES = libusual
@@ -70,15 +68,14 @@ index 7a07e11..83b3e41 100644
  
  # files in tgz
  EXTRA_DIST = AUTHORS COPYRIGHT Makefile config.mak.in config.sub config.guess \
-@@ -94,19 +100,20 @@ LIBUSUAL_DIST = $(filter-out %/config.h, $(sort $(wildcard \
+@@ -91,19 +95,19 @@ LIBUSUAL_DIST = $(filter-out %/config.h, $(sort $(wildcard \
  		lib/README lib/COPYRIGHT \
  		lib/find_modules.sh )))
  
 -pgbouncer_LDFLAGS := $(TLS_LDFLAGS)
 -pgbouncer_LDADD := $(CARES_LIBS) $(LIBEVENT_LIBS) $(TLS_LIBS) $(LIBS)
-+ruby_LDFLAGS := $(shell pkg-config --libs ruby)
 +pg_ddm_LDFLAGS := $(TLS_LDFLAGS)
-+pg_ddm_LDADD := $(CARES_LIBS) $(LIBEVENT_LIBS) $(TLS_LIBS) $(LIBS) $(ruby_LDFLAGS)
++pg_ddm_LDADD := $(CARES_LIBS) $(LIBEVENT_LIBS) $(TLS_LIBS) $(LIBS) $(shell pkg-config --libs ruby)
  LIBS :=
  
  #
@@ -96,19 +93,10 @@ index 7a07e11..83b3e41 100644
  bin_PROGRAMS += pgbevent
  endif
  
-@@ -146,7 +153,7 @@ debian/changelog: NEWS.md
- 	echo >>$@
- 	echo '  * v$(PACKAGE_VERSION)' >>$@
- 	echo >>$@
--	printf ' -- PgBouncer developers <noreply@localhost>  ' >>$@
-+	printf ' -- pg_ddm developers <noreply@localhost>  ' >>$@
- 	date -u -R -d `sed -E -n '/^\*\*/ { s/^.*([0-9]{4}-[0-9]{2}-[0-9]{2}).*/\1/;p;q }' $<` >>$@
- 
- w32arch = i686-w64-mingw32
-@@ -160,17 +167,17 @@ zip: configure clean
+@@ -146,17 +150,17 @@ zip: configure clean
  			--without-cares \
  			--enable-evdns \
- 		&& make \
+ 		&& $(MAKE) \
 -		&& $(w32arch)-strip pgbouncer.exe pgbevent.dll \
 -		&& zip pgbouncer.zip pgbouncer.exe pgbevent.dll doc/*.html
 -	zip -l buildexe/pgbouncer.zip etc/pgbouncer.ini etc/userlist.txt
@@ -129,7 +117,7 @@ index 7a07e11..83b3e41 100644
  
  .PHONY: tags
  tags:
-@@ -181,5 +188,5 @@ htmls:
+@@ -167,5 +171,5 @@ htmls:
  		mkdir -p html && $(PANDOC) $$f -o html/`basename $$f`.html; \
  	done
  
@@ -137,7 +125,7 @@ index 7a07e11..83b3e41 100644
 +doc/pg_ddm.1 doc/pg_ddm.5:
  	$(MAKE) -C doc
 diff --git a/configure.ac b/configure.ac
-index 10a8466..cc3a743 100644
+index 05ba08e..3bfe9ae 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -1,6 +1,6 @@
@@ -149,7 +137,7 @@ index 10a8466..cc3a743 100644
          [https://github.com/pgbouncer/pgbouncer/issues], [],
          [https://www.pgbouncer.org/])
 diff --git a/doc/Makefile b/doc/Makefile
-index 049f636..ab9ff63 100644
+index cc1d6ad..e83c3d4 100644
 --- a/doc/Makefile
 +++ b/doc/Makefile
 @@ -1,6 +1,6 @@
@@ -189,13 +177,13 @@ index 049f636..ab9ff63 100644
 +.INTERMEDIATE: pg_ddm_1.md pg_ddm_5.md
  
  web:
--	make -C ../../pgbouncer.github.io
-+	make -C ../../pg_ddm.github.io
+-	$(MAKE) -C ../../pgbouncer.github.io
++	$(MAKE) -C ../../pg_ddm.github.io
 diff --git a/include/bouncer.h b/include/bouncer.h
-index 45795e0..66697c6 100644
+index b9f2b9f..3750b8f 100644
 --- a/include/bouncer.h
 +++ b/include/bouncer.h
-@@ -87,6 +87,8 @@ typedef struct ScramState ScramState;
+@@ -100,6 +100,8 @@ typedef struct ScramState ScramState;
  
  extern int cf_sbuf_len;
  
@@ -204,7 +192,7 @@ index 45795e0..66697c6 100644
  #include "util.h"
  #include "iobuf.h"
  #include "sbuf.h"
-@@ -332,6 +334,11 @@ struct PgDatabase {
+@@ -345,6 +347,11 @@ struct PgDatabase {
  	int connection_count;	/* total connections for this database in all pools */
  
  	struct AATree user_tree;	/* users that have been queried on this database */
@@ -216,7 +204,7 @@ index 45795e0..66697c6 100644
  };
  
  
-@@ -516,6 +523,15 @@ extern char *cf_server_tls_ca_file;
+@@ -530,6 +537,15 @@ extern char *cf_server_tls_ca_file;
  extern char *cf_server_tls_cert_file;
  extern char *cf_server_tls_key_file;
  extern char *cf_server_tls_ciphers;
@@ -245,7 +233,7 @@ index afb7ae9..fa185c7 100644
  PgPool *get_pool(PgDatabase *, PgUser *);
  PgSocket *compare_connections_by_time(PgSocket *lhs, PgSocket *rhs);
 diff --git a/src/client.c b/src/client.c
-index acaa9a1..c35f7b8 100644
+index 2171125..33cc7ce 100644
 --- a/src/client.c
 +++ b/src/client.c
 @@ -58,6 +58,7 @@ static bool check_client_passwd(PgSocket *client, const char *passwd)
@@ -256,7 +244,7 @@ index acaa9a1..c35f7b8 100644
  	case AUTH_MD5:
  		if (strlen(passwd) != MD5_PASSWD_LEN)
  			return false;
-@@ -479,10 +480,12 @@ static bool decide_startup_pool(PgSocket *client, PktHdr *pkt)
+@@ -483,10 +484,12 @@ static bool decide_startup_pool(PgSocket *client, PktHdr *pkt)
  		} else if (strcmp(key, "application_name") == 0) {
  			set_appname(client, val);
  			appname_found = true;
@@ -271,7 +259,7 @@ index acaa9a1..c35f7b8 100644
  		} else {
  			slog_warning(client, "unsupported startup parameter: %s=%s", key, val);
  			disconnect_client(client, true, "unsupported startup parameter: %s", key);
-@@ -860,6 +863,12 @@ static bool handle_client_work(PgSocket *client, PktHdr *pkt)
+@@ -864,6 +867,12 @@ static bool handle_client_work(PgSocket *client, PktHdr *pkt)
  	if (client->pool->db->admin)
  		return admin_handle_client(client, pkt);
  
@@ -285,10 +273,10 @@ index acaa9a1..c35f7b8 100644
  	if (!find_server(client))
  		return false;
 diff --git a/src/loader.c b/src/loader.c
-index 016ce9f..34ae128 100644
+index 11b4bee..589a7e6 100644
 --- a/src/loader.c
 +++ b/src/loader.c
-@@ -199,6 +199,10 @@ bool parse_database(void *base, const char *name, const char *connstr)
+@@ -195,6 +195,10 @@ bool parse_database(void *base, const char *name, const char *connstr)
  	char *timezone = NULL;
  	char *connect_query = NULL;
  	char *appname = NULL;
@@ -299,7 +287,7 @@ index 016ce9f..34ae128 100644
  
  	int v_port;
  
-@@ -226,7 +230,15 @@ bool parse_database(void *base, const char *name, const char *connstr)
+@@ -222,7 +226,15 @@ bool parse_database(void *base, const char *name, const char *connstr)
  
  		if (strcmp("dbname", key) == 0) {
  			dbname = val;
@@ -316,7 +304,7 @@ index 016ce9f..34ae128 100644
  			host = val;
  		} else if (strcmp("port", key) == 0) {
  			port = val;
-@@ -288,6 +300,20 @@ bool parse_database(void *base, const char *name, const char *connstr)
+@@ -284,6 +296,20 @@ bool parse_database(void *base, const char *name, const char *connstr)
  		}
  	}
  
@@ -338,10 +326,10 @@ index 016ce9f..34ae128 100644
  	db->db_dead = 0;
  	/* assuming not an autodb */
 diff --git a/src/main.c b/src/main.c
-index e7e63d6..207e6be 100644
+index 43d6582..86cfc15 100644
 --- a/src/main.c
 +++ b/src/main.c
-@@ -165,6 +165,15 @@ char *cf_server_tls_ca_file;
+@@ -169,6 +169,15 @@ char *cf_server_tls_ca_file;
  char *cf_server_tls_cert_file;
  char *cf_server_tls_key_file;
  char *cf_server_tls_ciphers;
@@ -357,7 +345,7 @@ index e7e63d6..207e6be 100644
  
  /*
   * config file description
-@@ -301,6 +310,16 @@ CF_ABS("server_tls_key_file", CF_STR, cf_server_tls_key_file, CF_NO_RELOAD, ""),
+@@ -306,6 +315,16 @@ CF_ABS("server_tls_key_file", CF_STR, cf_server_tls_key_file, CF_NO_RELOAD, ""),
  CF_ABS("server_tls_protocols", CF_STR, cf_server_tls_protocols, CF_NO_RELOAD, "secure"),
  CF_ABS("server_tls_ciphers", CF_STR, cf_server_tls_ciphers, CF_NO_RELOAD, "fast"),
  
@@ -374,7 +362,7 @@ index e7e63d6..207e6be 100644
  {NULL}
  };
  
-@@ -815,6 +834,13 @@ static void cleanup(void)
+@@ -828,6 +847,13 @@ static void cleanup(void)
  	xfree(&cf_server_tls_key_file);
  	xfree(&cf_server_tls_ciphers);
  
@@ -389,7 +377,7 @@ index e7e63d6..207e6be 100644
  	xfree((char **)&cf_syslog_ident);
  	xfree((char **)&cf_syslog_facility);
 diff --git a/src/objects.c b/src/objects.c
-index 4878fa1..6281940 100644
+index 7bd159e..dd1570e 100644
 --- a/src/objects.c
 +++ b/src/objects.c
 @@ -487,6 +487,29 @@ PgDatabase *find_database(const char *name)
