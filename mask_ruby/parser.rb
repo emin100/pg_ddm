@@ -2,7 +2,7 @@ require 'pg_query'
 require 'json'
 require 'etcdv3'
 require 'hashie'
-# require 'awesome_print'
+require 'awesome_print'
 
 class PgQueryOpt
   @etcd                  = nil
@@ -22,6 +22,7 @@ class PgQueryOpt
   @default_scheme        = nil
   @default_scheme_tables = {}
   @data_in_etcd          = {}
+  @debug                 = 0
 
   def set_prop(sql, username, db, etcd_host, etcd_port, etcd_user, etcd_passwd, user_regex, tag_regex, default_scheme, main_call)
     @sql         = sql
@@ -60,17 +61,36 @@ class PgQueryOpt
     end
   end
 
+  def check_union(tree)
+    unless tree['SelectStmt'].nil?
+      unless tree['SelectStmt']['larg'].nil?
+        subselect_sql = @query_parser.deparse([tree['SelectStmt']['larg']])
+        set_prop(subselect_sql, @username, @db, @etcd_host, @etcd_port, @etcd_user, @etcd_passwd, @user_regex, @tag_regex, @default_scheme, false)
+        tree['SelectStmt']['larg'] = PgQuery.parse(get_sql).tree[0]['RawStmt']['stmt']
+      end
+      unless tree['SelectStmt']['rarg'].nil?
+        subselect_sql = @query_parser.deparse([tree['SelectStmt']['rarg']])
+        set_prop(subselect_sql, @username, @db, @etcd_host, @etcd_port, @etcd_user, @etcd_passwd, @user_regex, @tag_regex, @default_scheme, false)
+        tree['SelectStmt']['rarg'] = PgQuery.parse(get_sql).tree[0]['RawStmt']['stmt']
+      end
+    end
+    tree
+  end
+
   def get_subsql(key, return_sql)
     unless key.nil?
       common = @query_tree.deep_find_all(key)
       unless common.nil?
         common.each do |i|
+          @debug = 1
+
+          subselect_sql_orig = @query_parser.deparse([i])
+          i = check_union(i)
 
           subselect_sql = @query_parser.deparse([i])
           set_prop(subselect_sql, @username, @db, @etcd_host, @etcd_port, @etcd_user, @etcd_passwd, @user_regex, @tag_regex, @default_scheme, false)
           subselect_sql_changed = get_sql
-
-          return_sql = return_sql.gsub subselect_sql, subselect_sql_changed
+          return_sql = return_sql.gsub subselect_sql_orig, subselect_sql_changed
         end
       end
     end
@@ -105,7 +125,6 @@ class PgQueryOpt
       for query in @query_parser.tree
         @query_tree = query
         @query_tree.extend Hashie::Extensions::DeepFind
-
         resolve_stars
         check_rules(nil)
         add_filter
@@ -118,8 +137,7 @@ class PgQueryOpt
       return_sql = get_subsql('subselect', return_sql)
       return_sql = get_subsql('ctequery', return_sql)
       return_sql = get_subsql('subquery', return_sql)
-
-
+      ap @tag_sql + return_sql
       return @tag_sql + return_sql
     rescue => e
       puts e
@@ -246,34 +264,36 @@ class PgQueryOpt
     if column_ref.nil?
       list = get_column_list
       i    = -1
-      list.each do |col|
-        i += 1
-        k = 0
-        unless col['ResTarget']['val']['FuncCall'].nil?
-          col['ResTarget']['val']['FuncCall']['args'].each do |col_ref|
-            if col_ref['FuncCall'].nil?
-              rule                                                                                                     = make_rules(col_ref, nil)
-              @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i]['ResTarget']['val']['FuncCall']['args'][k] = rule['ResTarget']['val'] unless rule.nil?
+      unless list.nil?
+        list.each do |col|
+          i += 1
+          k = 0
+          unless col['ResTarget']['val']['FuncCall'].nil?
+            col['ResTarget']['val']['FuncCall']['args'].each do |col_ref|
+              if col_ref['FuncCall'].nil?
+                rule                                                                                                     = make_rules(col_ref, nil)
+                @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i]['ResTarget']['val']['FuncCall']['args'][k] = rule['ResTarget']['val'] unless rule.nil?
 
-            else
-              check_rules(col_ref['FuncCall']['args'])
+              else
+                check_rules(col_ref['FuncCall']['args'])
+              end
+
+              k += 1
             end
-
-            k += 1
           end
-        end
 
-        @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i]['ResTarget']['val'] = check_exp(col['ResTarget']['val'])
+          @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i]['ResTarget']['val'] = check_exp(col['ResTarget']['val'])
 
 
-        next if col['ResTarget']['val']['ColumnRef'].nil?
+          next if col['ResTarget']['val']['ColumnRef'].nil?
 
-        rule = make_rules(col['ResTarget']['val'], col['ResTarget']['name'])
-        unless rule.nil?
-          if rule['del'].nil?
-            @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i] = rule
-          else
-            @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'].delete_at(i)
+          rule = make_rules(col['ResTarget']['val'], col['ResTarget']['name'])
+          unless rule.nil?
+            if rule['del'].nil?
+              @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i] = rule
+            else
+              @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'].delete_at(i)
+            end
           end
         end
       end
@@ -320,10 +340,11 @@ class PgQueryOpt
         col_name_last = col_detail[1]
       else
         nil unless col_detail[1]['A_Star'].nil?
+        # print col_detail
 
         table         = @query_parser.aliases[col_detail[0]['String']['str']]
         col_prefix    = change_col_names_for_etcd(table)
-        col_name_last = col_detail[1]['String']['str']
+        col_name_last = col_detail[1]['String']['str'] unless col_detail[1]['String'].nil?
       end
     elsif col_detail.count == 1
       @query_parser.tables.each do |table|
@@ -486,6 +507,31 @@ class PgQueryOpt
     end
   end
 
+  def find_table_list(tree)
+    table_list = []
+    if tree.kind_of?(Array)
+      for k in tree
+        table_list += find_table_list(k)
+      end
+    else
+
+      table_list += find_table_list(tree['SelectStmt']) unless tree['SelectStmt'].nil?
+      table_list += find_table_list(tree['fromClause']) unless tree['fromClause'].nil?
+      table_list += find_table_list(tree['JoinExpr']) unless tree['JoinExpr'].nil?
+      table_list += find_table_list(tree['larg']) unless tree['larg'].nil?
+      table_list += find_table_list(tree['rarg']) unless tree['rarg'].nil?
+
+      unless tree['RangeVar'].nil?
+        if tree['RangeVar']['schemaname'].nil?
+          table_list.push(tree['RangeVar']['relname'])
+        else
+          table_list.push(tree['RangeVar']['schemaname'] + '.' + tree['RangeVar']['relname'])
+        end
+      end
+    end
+    table_list
+  end
+
   def resolve_stars
     conn_etcd
     all_fields = []
@@ -493,31 +539,9 @@ class PgQueryOpt
     xx = @query_parser.tree
     xx.extend Hashie::Extensions::DeepFind
 
-    table_list = []
     unless @query_tree['RawStmt']['stmt']['SelectStmt'].nil?
-      unless @query_tree['RawStmt']['stmt']['SelectStmt']['fromClause'].nil?
-        for k in @query_tree['RawStmt']['stmt']['SelectStmt']['fromClause']
-          if !k['JoinExpr'].nil?
-            k.extend Hashie::Extensions::DeepFind
-            unless k.deep_find('subquery')
-              k.deep_find_all('RangeVar').each do |find_tables|
-                if find_tables['schemaname'].nil?
-                  table_list.push(find_tables['relname'])
-                else
-                  table_list.push(find_tables['schemaname'] + '.' + find_tables['relname'])
-                end
-              end
-            end
-          elsif !k['RangeVar'].nil?
-            if k['RangeVar']['schemaname'].nil?
-              table_list.push(k['RangeVar']['relname'])
-            else
-              table_list.push(k['RangeVar']['schemaname'] + '.' + k['RangeVar']['relname'])
-            end
-          end
-        end
-
-      end
+      # @query_tree['RawStmt']['stmt'] = check_union(@query_tree['RawStmt']['stmt'])
+      table_list = find_table_list(@query_tree['RawStmt']['stmt']['SelectStmt'])
       unless get_column_list.nil?
         get_column_list.each do |name|
           i     = 0
@@ -593,4 +617,3 @@ class PgQueryOpt
     @query_parser.tree
   end
 end
-
