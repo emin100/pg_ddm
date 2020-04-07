@@ -2,7 +2,7 @@ require 'pg_query'
 require 'json'
 require 'etcdv3'
 require 'hashie'
-require 'awesome_print'
+# require 'awesome_print'
 
 class PgQueryOpt
   @etcd                  = nil
@@ -137,7 +137,7 @@ class PgQueryOpt
       return_sql = get_subsql('subselect', return_sql)
       return_sql = get_subsql('ctequery', return_sql)
       return_sql = get_subsql('subquery', return_sql)
-      ap @tag_sql + return_sql
+      # ap @tag_sql + return_sql
       return @tag_sql + return_sql
     rescue => e
       puts e
