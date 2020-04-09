@@ -85,12 +85,12 @@ class PgQueryOpt
           @debug = 1
 
           subselect_sql_orig = @query_parser.deparse([i])
-          i = check_union(i)
+          i                  = check_union(i)
 
           subselect_sql = @query_parser.deparse([i])
           set_prop(subselect_sql, @username, @db, @etcd_host, @etcd_port, @etcd_user, @etcd_passwd, @user_regex, @tag_regex, @default_scheme, false)
           subselect_sql_changed = get_sql
-          return_sql = return_sql.gsub subselect_sql_orig, subselect_sql_changed
+          return_sql            = return_sql.gsub subselect_sql_orig, subselect_sql_changed
         end
       end
     end
@@ -123,11 +123,14 @@ class PgQueryOpt
       # end
       i = 0
       for query in @query_parser.tree
+        print query
         @query_tree = query
-        @query_tree.extend Hashie::Extensions::DeepFind
-        resolve_stars
-        check_rules(nil)
-        add_filter
+        unless query['RawStmt']['stmt']['SelectStmt'].nil?
+          @query_tree.extend Hashie::Extensions::DeepFind
+          resolve_stars
+          check_rules(nil)
+          add_filter
+        end
 
         @query_parser.tree[i] = @query_tree
         i                     += 1
