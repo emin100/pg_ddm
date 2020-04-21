@@ -26,11 +26,15 @@ VALUE* embeded(VALUE q) {
 	parser = rb_const_get(rb_cObject, rb_intern("PgQueryOpt"));
 
 	VALUE xx = rb_funcall(parser, rb_intern("new"), 0);
-	rb_funcall(xx, rb_intern("set_prop"), 11, data->query_str, data->username,
+//	rb_funcall(xx, rb_intern("set_prop"), 11, data->query_str, data->username,
+//			data->db, data->etcd_host, data->etcd_port, data->etcd_user,
+//			data->etcd_passwd, data->user_regex, data->tag_regex,
+//			data->default_scheme, true);
+//	result = rb_funcall(xx, rb_intern("get_sql"), 0);
+	result = rb_funcall(xx, rb_intern("properties"), 10, data->query_str, data->username,
 			data->db, data->etcd_host, data->etcd_port, data->etcd_user,
 			data->etcd_passwd, data->user_regex, data->tag_regex,
-			data->default_scheme, true);
-	result = rb_funcall(xx, rb_intern("get_sql"), 0);
+			data->default_scheme);
 
 	return result;
 
@@ -68,7 +72,7 @@ struct query_return rubycall_role(PgSocket *client, char *username,
 		ruby_script("RewriteQuery");
 		rb_define_module("Gem");
 		rb_require("rubygems");
-		rb_require("/etc/pg_ddm/mask_ruby/parser.rb");
+		rb_require("/etc/pg_ddm/mask_ruby/parser2.rb");
 		loader = 1;
 	}
 
@@ -109,7 +113,7 @@ struct query_return rubycall(PgSocket *client, char *username, char *query_str) 
 		ruby_script("RewriteQuery");
 		rb_define_module("Gem");
 		rb_require("rubygems");
-		rb_require("/etc/pg_ddm/mask_ruby/parser.rb");
+		rb_require("/etc/pg_ddm/mask_ruby/parser2.rb");
 		loader = 1;
 	}
 

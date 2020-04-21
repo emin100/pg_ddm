@@ -18,12 +18,18 @@ class LoginForm(FlaskForm):
 
 
 class RulesForm(FlaskForm):
+    name = StringField(lazy_gettext('Name'), id="filter", validators=[DataRequired()],
+                                          description=lazy_gettext("Don't use any blank or special character. This field use like a id"))
+    description = StringField(lazy_gettext('Description'), id="description")
     group = StringField(lazy_gettext('Table Column'), id="autocomplete_table", validators=[DataRequired()],
                         description=lazy_gettext('Please search like this(DB.SCHEMA.TABLE.COLUMN)'))
 
     # group_name = StringField(lazy_gettext('Group Name'), validators=[DataRequired()])
     group_name = StringField(lazy_gettext('Group Name'), id="autocomplete_groups", validators=[DataRequired()],
                              description=lazy_gettext('Please search like this(DB.SCHEMA.TABLE.COLUMN)'))
+    filter = StringField(lazy_gettext('Filter'), id="filter",
+                                          description=lazy_gettext('SQL Filter'))
+    enabled = BooleanField(lazy_gettext('Enabled'), default='true')
     submit = SubmitField(lazy_gettext(u'Submit'))
 
 

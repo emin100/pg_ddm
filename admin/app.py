@@ -226,18 +226,28 @@ def rules(url_type=None):
     if url_type == 'change':
         form = forms.RulesForm()
         if form.validate_on_submit():
-            etcd_conn.put('/rules/' + form.group.data.replace('.', '/') + '/' + form.group_name.data.replace('.', '/'),
-                          '{"group_name":"' + '/' + form.group_name.data.replace('.', '/') + '"}')
+            status = 'false'
+            if form.enabled.data is True:
+                status = 'true'
+            etcd_conn.put('/rules/' + form.group.data.replace('.', '/') + '/' + form.group_name.data.replace('.', '/')+ '/' + form.name.data,
+                          '{"name":"' + form.name.data + '",'+
+                          '"description":"' + form.description.data + '",'+
+                          '"group":"' + form.group.data + '",'+
+                          '"filter":"' + form.filter.data + '",'+
+                          '"enabled":"' + status + '",'+
+                          '"group_name":"' + '/' + form.group_name.data.replace('.', '/') + '"}')
             flash(_('Rule') + ' ' + _('Added'), 'info')
-            return flask.redirect(flask.url_for('rules'))
+#             return flask.redirect(flask.url_for('rules'))
         return flask.render_template('list.html', main_header=_('Rules'), form=form, button_list=button_list)
     elif url_type == 'delete':
         etcd_conn.delete(flask.request.args.get('key'))
         flash(_('Rule') + ' ' + _('Deleted'), 'error')
 
     group_list = etcd_conn.search('/rules/')
-    headers = [_('Name'), _('Group Name')]
-    links = [{'name': _('Delete'), 'type': 'danger', 'link': '/rules/delete'}]
+    print(group_list)
+    headers = [_('Key'), _('Description'), _('Enabled'), _('Filter'), _('Table'), _('Group Name'),_('Name')]
+    links = [{'name': _('Delete'), 'type': 'danger', 'link': '/rules/delete'},
+            {'name': _('Update'), 'type': 'info', 'link': '/rules/change'}]
 
     return flask.render_template('list.html', main_header=_('Rules'), list=group_list, headers=headers,
                                  button_list=button_list, links=links)
