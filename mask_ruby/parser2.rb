@@ -22,6 +22,7 @@ class PgQueryOpt
   @groups            = {}
   @return_column_ref = {}
   @in_function       = 0
+  @name              = nil
 
   def properties(sql, username, db, etcd_host, etcd_port, etcd_user, etcd_passwd, user_regex, tag_regex, default_scheme)
 
@@ -37,6 +38,7 @@ class PgQueryOpt
     @data_in_etcd   = {}
     @default_scheme = default_scheme
     @in_function    = 0
+    @name           = nil
 
     @pass_tag = /#{@tag_regex}/.match(@sql)
     return @sql if @pass_tag
@@ -207,8 +209,14 @@ class PgQueryOpt
         rules_group = etcd_data(data['group_name'])
 
         if rules_group['enabled'].to_s == 'true'
+          name = if @name.nil?
+                   get_string(ref[-1])
+                 else
+                   @name if @name.is_a?(String)
+                 end
+
           if rules_group['rule'] == 'send_null'
-            return_column_ref = { 'ResTarget' => { 'name' => get_string(ref[-1]), 'val' => { 'A_Const' => { 'val' => { 'Null' => {} } } } } }
+            return_column_ref = { 'ResTarget' => { 'name' => name, 'val' => { 'A_Const' => { 'val' => { 'Null' => {} } } } } }
           elsif rules_group['rule'] == 'delete_col'
             return_column_ref = { 'del' => 1 }
           else
@@ -216,9 +224,9 @@ class PgQueryOpt
             # TODO: Schema is not dynamic
             func = { 'funcname' => [{ 'String' => { 'str' => 'mask' } }, { 'String' => { 'str' => rules_group['rule'] } }], 'args' => change_colname }
 
-            return_column_ref = { 'ResTarget' => { 'name' => get_string(ref[-1]), 'val' => { 'FuncCall' => func } } }
+            return_column_ref = { 'ResTarget' => { 'name' => name, 'val' => { 'FuncCall' => func } } }
           end
-          return_column_ref = { "ResTarget" => { "name" => get_string(ref[-1]), "val" => { "CaseExpr" => { "args" => [{ "CaseWhen" => { "expr" => filter_where[0], "result" => return_column_ref['ResTarget']['val'] } }], "defresult" => { 'ColumnRef' => { 'fields' => ref } } } } } } if data['filter'] != ''
+          return_column_ref = { "ResTarget" => { "name" => name, "val" => { "CaseExpr" => { "args" => [{ "CaseWhen" => { "expr" => filter_where[0], "result" => return_column_ref['ResTarget']['val'] } }], "defresult" => { 'ColumnRef' => { 'fields' => ref } } } } } } if data['filter'] != ''
 
         end
       end
@@ -262,8 +270,12 @@ class PgQueryOpt
         items.keys.each do |item|
           case item
           when 'fields'
-            @ref               = items[item]
+            @ref = items[item]
+            print @name
             @return_column_ref = mask(@ref, table_list) if @ref[-1]['A_Star'].nil?
+            @name
+          when 'name'
+            @name = items[item]
           when 'args'
             @remove_ref = 3
           when 'funcname'
