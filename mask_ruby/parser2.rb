@@ -66,6 +66,7 @@ class PgQueryOpt
       @query_parser.tree[i] = parse(parse_item)
       i                     += 1
     end
+
     @tag_sql + @query_parser.deparse
   rescue StandardError => e
     puts e
@@ -204,15 +205,13 @@ class PgQueryOpt
         break unless data.empty?
       end
       unless data.empty?
-        filter_where = get_filters(table_list, data) if data['filter'] != ''
-
         rules_group = etcd_data(data['group_name'])
 
         if rules_group['enabled'].to_s == 'true'
           name = if @name.nil?
                    get_string(ref[-1])
-                 else
-                   @name if @name.is_a?(String)
+                 elsif @name.is_a?(String)
+                   @name
                  end
 
           if rules_group['rule'] == 'send_null'
@@ -226,8 +225,17 @@ class PgQueryOpt
 
             return_column_ref = { 'ResTarget' => { 'name' => name, 'val' => { 'FuncCall' => func } } }
           end
-          return_column_ref = { "ResTarget" => { "name" => name, "val" => { "CaseExpr" => { "args" => [{ "CaseWhen" => { "expr" => filter_where[0], "result" => return_column_ref['ResTarget']['val'] } }], "defresult" => { 'ColumnRef' => { 'fields' => ref } } } } } } if data['filter'] != ''
+          if data['filter'] != ''
+            # ap '----'
+            # print data['group'].split('.')[0...-1]
+            # print tab
+            # ap '----'
+            xx = {}
+            xx[tab['alias']] = tab
 
+            filter_where      = get_filters(xx, data)
+            return_column_ref = { "ResTarget" => { "name" => name, "val" => { "CaseExpr" => { "args" => [{ "CaseWhen" => { "expr" => filter_where[0], "result" => return_column_ref['ResTarget']['val'] } }], "defresult" => { 'ColumnRef' => { 'fields' => ref } } } } } }
+          end
         end
       end
     end
@@ -270,12 +278,13 @@ class PgQueryOpt
         items.keys.each do |item|
           case item
           when 'fields'
-            @ref = items[item]
-            print @name
+            @ref               = items[item]
             @return_column_ref = mask(@ref, table_list) if @ref[-1]['A_Star'].nil?
-            @name
+            @name              = nil
           when 'name'
             @name = items[item]
+          when 'ColumnRef'
+            @remove_ref = 3
           when 'args'
             @remove_ref = 3
           when 'funcname'
