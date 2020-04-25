@@ -229,27 +229,105 @@ def rules(url_type=None):
             status = 'false'
             if form.enabled.data is True:
                 status = 'true'
-            etcd_conn.put('/rules/' + form.group.data.replace('.', '/') + '/' + form.group_name.data.replace('.', '/')+ '/' + form.name.data,
-                          '{"name":"' + form.name.data + '",'+
-                          '"description":"' + form.description.data + '",'+
-                          '"group":"' + form.group.data + '",'+
-                          '"filter":"' + form.filter.data + '",'+
-                          '"enabled":"' + status + '",'+
-                          '"group_name":"' + '/' + form.group_name.data.replace('.', '/') + '"}')
+            prop = ''
+            if form.rule.data in form.test.keys():
+                if len(form.test[form.rule.data]) > 0:
+                    prop = "["
+                    for i in form.test[form.rule.data]:
+                        x = str(i).replace('open_close_', '')
+                        if x == 'col':
+                            prop += '%col%,'
+                        elif str(flask.request.form[x]).isdigit():
+                            prop += '{"A_Const": {"val": ' + flask.request.form[x] + '}},'
+                        else:
+                            prop += '{"A_Const": {"val": {"String": {"str": "' + flask.request.form[x] + '"}}}},'
+
+                    prop = prop[:-1] + ']'
+            else:
+                prop = '[]'
+            row = { "name": form.name.data, "description": form.description.data,
+                          "table_column": form.table_column.data,
+                          "filter": form.filter.data , "enabled": status,
+                          "group_name": form.group_name.data,
+                          "prop": prop,
+                          "rule": form.rule.data }
+
+            etcd_conn.put('/rules/' + form.table_column.data.replace('.', '/') + '/' + form.group_name.data.replace('.', '/')+ '/' + form.name.data,
+                          json.dumps(row))
             flash(_('Rule') + ' ' + _('Added'), 'info')
-#             return flask.redirect(flask.url_for('rules'))
-        return flask.render_template('list.html', main_header=_('Rules'), form=form, button_list=button_list)
+            return flask.redirect(flask.url_for('rules'))
+        elif flask.request.args.get('key'):
+            form_data = etcd_conn.get_list(flask.request.args.get('key'))
+            i = 0
+            prop = form_data.get('prop').replace('%col%', '"%col%"')
+            for x in json.loads(prop):
+                if x != "%col%":
+                    obj = getattr(form, form.test.get(form_data.get('rule'))[i].replace('open_close_', ''))
+                    try:
+                        obj.data = x.get('A_Const').get('val').get("String").get("str")
+                    except:
+                        obj.data = x.get('A_Const').get('val')
+                i = i + 1
+            form.enabled.data = False
+            if form_data.get('enabled') == 'true':
+                form.enabled.data = True
+            form.rule.data = form_data.get('rule')
+            form.description.data = form_data.get('description')
+            form.group_name.data = form_data.get('group_name')
+            form.filter.data = form_data.get('filter')
+            form.table_column.data = form_data.get('table_column')
+            form.name.data = form_data.get('name')
+            form.name.render_kw = {'readonly': True}
+        return flask.render_template('rules.html', main_header=_('Rules'), form=form, button_list=button_list)
+
     elif url_type == 'delete':
         etcd_conn.delete(flask.request.args.get('key'))
         flash(_('Rule') + ' ' + _('Deleted'), 'error')
 
     group_list = etcd_conn.search('/rules/')
-    print(group_list)
-    headers = [_('Key'), _('Description'), _('Enabled'), _('Filter'), _('Table'), _('Group Name'),_('Name')]
+    headers = [_('Key'), _('Description'), _('Enabled'), _('Filter'), _('Table'), _('Group Name'),_('Name'), _('Properties'), _('Rule')]
     links = [{'name': _('Delete'), 'type': 'danger', 'link': '/rules/delete'},
             {'name': _('Update'), 'type': 'info', 'link': '/rules/change'}]
 
     return flask.render_template('list.html', main_header=_('Rules'), list=group_list, headers=headers,
+                                 button_list=button_list, links=links)
+
+
+@app.route('/groups', methods=['GET', 'POST'])
+@app.route('/groups/<url_type>', methods=['GET', 'POST'])
+@login_required
+def groups(url_type=None):
+    etcd_conn = Etcd()
+    headers = [_('Name'), _('Description'), _('Enabled')]
+    button_list = [{'name': _('New'), 'href': '/groups/change'}, {'name': _('List'), 'href': '/groups'}]
+    if url_type == 'change':
+        form = forms.GroupsForm()
+
+        if form.validate_on_submit():
+            status = 'false'
+            if form.enabled.data is True:
+                status = 'true'
+            row = {"enabled": status, "desc": form.desc.data}
+            etcd_conn.put('/groups/' + form.name.data.replace(' ', '_'),
+                          json.dumps(row))
+            flash(_('Group') + ' ' + _('Added'), 'info')
+            return flask.redirect(flask.url_for('groups'))
+        elif flask.request.args.get('key'):
+            form_data = etcd_conn.get_list(flask.request.args.get('key'))
+            form.enabled.data = False
+            if form_data.get('enabled') == 'true':
+                form.enabled.data = True
+            form.desc.data = form_data.get('desc')
+            form.name.data = flask.request.args.get('key').replace('/groups/', '')
+            form.name.render_kw = {'readonly': True}
+        return flask.render_template('list.html', main_header=_('Groups'), form=form, button_list=button_list)
+    elif url_type == 'delete':
+        etcd_conn.delete(flask.request.args.get('key'))
+        flash(_('Group') + ' ' + _('Deleted'), 'error')
+    group_list = etcd_conn.search('/groups/')
+    links = [{'name': _('Delete'), 'type': 'danger', 'link': '/groups/delete'},
+             {'name': _('Update'), 'type': 'info', 'link': '/groups/change'}]
+    return flask.render_template('list.html', main_header=_('Groups'), list=group_list, headers=headers,
                                  button_list=button_list, links=links)
 
 
@@ -334,72 +412,6 @@ def dbusers(url_type=None):
     links = [{'name': _('Delete'), 'type': 'danger', 'link': '/dbusers/delete'},
              {'name': _('Update'), 'type': 'info', 'link': '/dbusers/change'}]
     return flask.render_template('list.html', main_header=_('Users'), list=group_list, headers=headers,
-                                 button_list=button_list, links=links)
-
-
-@app.route('/groups', methods=['GET', 'POST'])
-@app.route('/groups/<url_type>', methods=['GET', 'POST'])
-@login_required
-def groups(url_type=None):
-    etcd_conn = Etcd()
-    headers = [_('Name'), _('Description'), _('Enabled'), _('Properties'), _('Rule')]
-    button_list = [{'name': _('New'), 'href': '/groups/change'}, {'name': _('List'), 'href': '/groups'}]
-    if url_type == 'change':
-        form = forms.GroupsForm()
-
-        if form.validate_on_submit():
-            status = 'false'
-            if form.enabled.data is True:
-                status = 'true'
-            prop = ''
-            if form.rule.data in form.test.keys():
-                if len(form.test[form.rule.data]) > 0:
-                    prop = "["
-                    for i in form.test[form.rule.data]:
-                        x = str(i).replace('open_close_', '')
-                        if x == 'col':
-                            prop += '%col%,'
-                        elif str(flask.request.form[x]).isdigit():
-                            prop += '{"A_Const": {"val": ' + flask.request.form[x] + '}},'
-                        else:
-                            prop += '{"A_Const": {"val": {"String": {"str": "' + flask.request.form[x] + '"}}}},'
-
-                    prop = prop[:-1] + ']'
-            else:
-                prop = '[]'
-            row = {"enabled": status, "rule": form.rule.data, "prop": prop, "desc": form.desc.data}
-            etcd_conn.put('/groups/' + form.name.data.replace(' ', '_'),
-                          json.dumps(row))
-            flash(_('Group') + ' ' + _('Added'), 'info')
-            return flask.redirect(flask.url_for('groups'))
-        elif flask.request.args.get('key'):
-            form_data = etcd_conn.get_list(flask.request.args.get('key'))
-            i = 0
-            prop = form_data.get('prop').replace('%col%', '"%col%"')
-            for x in json.loads(prop):
-                print(x)
-                if x != "%col%":
-                    obj = getattr(form, form.test.get(form_data.get('rule'))[i].replace('open_close_', ''))
-                    try:
-                        obj.data = x.get('A_Const').get('val').get("String").get("str")
-                    except:
-                        obj.data = x.get('A_Const').get('val')
-                i = i + 1
-            form.enabled.data = False
-            if form_data.get('enabled') == 'true':
-                form.enabled.data = True
-            form.rule.data = form_data.get('rule')
-            form.desc.data = form_data.get('desc')
-            form.name.data = flask.request.args.get('key').replace('/groups/', '')
-            form.name.render_kw = {'readonly': True}
-        return flask.render_template('groups.html', main_header=_('Groups'), form=form, button_list=button_list)
-    elif url_type == 'delete':
-        etcd_conn.delete(flask.request.args.get('key'))
-        flash(_('Group') + ' ' + _('Deleted'), 'error')
-    group_list = etcd_conn.search('/groups/')
-    links = [{'name': _('Delete'), 'type': 'danger', 'link': '/groups/delete'},
-             {'name': _('Update'), 'type': 'info', 'link': '/groups/change'}]
-    return flask.render_template('groups.html', main_header=_('Groups'), list=group_list, headers=headers,
                                  button_list=button_list, links=links)
 
 
@@ -514,48 +526,6 @@ def pgbouncer():
         delattr(forms.PgBouncerForm, i)
 
     return flask.render_template('list.html', main_header=_('PgBouncer Config'), form=form)
-
-
-@app.route('/passtags', methods=['GET', 'POST'])
-@app.route('/passtags/<url_type>', methods=['GET', 'POST'])
-@login_required
-def passtags(url_type=None):
-    etcd_conn = Etcd()
-    headers = [_('Name'), _('Enabled'), _('Tag')]
-    button_list = [{'name': _('New'), 'href': '/passtags/change'}, {'name': _('List'), 'href': '/passtags'}]
-
-    if url_type == 'change':
-        form = forms.PassTagForm()
-        if form.validate_on_submit():
-            key = '/passtags/' + str(uuid.uuid4())
-            message = _('Added')
-            if flask.request.args.get('key'):
-                key = flask.request.args.get('key')
-                message = _('Updated')
-
-            status = 'false'
-            if form.enabled.data is True:
-                status = 'true'
-            row = {"tag": form.tag.data, "enabled": status}
-            etcd_conn.put(key, json.dumps(row))
-            flash(_('Tag') + ' ' + message, 'info')
-            return flask.redirect(flask.url_for('passtags'))
-        elif flask.request.args.get('key'):
-            form_data = etcd_conn.get_list(flask.request.args.get('key'))
-            form.enabled.data = False
-            if form_data.get('enabled') == 'true':
-                form.enabled.data = True
-            form.tag.data = form_data.get('tag')
-        return flask.render_template('list.html', main_header=_('Masking Pass Tags'), form=form, button_list=button_list)
-    elif url_type == 'delete':
-        etcd_conn.delete(flask.request.args.get('key'))
-        flash(_('Tag') + ' ' + _('Deleted'), 'error')
-
-    pass_tag_list = etcd_conn.search('/passtags/')
-    links = [{'name': _('Delete'), 'type': 'danger', 'link': '/passtags/delete'},
-             {'name': _('Update'), 'type': 'info', 'link': '/passtags/change'}]
-    return flask.render_template('list.html', main_header=_('Masking Pass Tags'), list=pass_tag_list, headers=headers,
-                                 button_list=button_list, links=links)
 
 
 @app.route('/sqlfilter', methods=['GET', 'POST'])

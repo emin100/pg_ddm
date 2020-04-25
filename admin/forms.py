@@ -18,29 +18,21 @@ class LoginForm(FlaskForm):
 
 
 class RulesForm(FlaskForm):
-    name = StringField(lazy_gettext('Name'), id="filter", validators=[DataRequired()],
-                                          description=lazy_gettext("Don't use any blank or special character. This field use like a id"))
-    description = StringField(lazy_gettext('Description'), id="description")
-    group = StringField(lazy_gettext('Table Column'), id="autocomplete_table", validators=[DataRequired()],
-                        description=lazy_gettext('Please search like this(DB.SCHEMA.TABLE.COLUMN)'))
-
-    # group_name = StringField(lazy_gettext('Group Name'), validators=[DataRequired()])
-    group_name = StringField(lazy_gettext('Group Name'), id="autocomplete_groups", validators=[DataRequired()],
-                             description=lazy_gettext('Please search like this(DB.SCHEMA.TABLE.COLUMN)'))
-    filter = StringField(lazy_gettext('Filter'), id="filter",
-                                          description=lazy_gettext('SQL Filter'))
-    enabled = BooleanField(lazy_gettext('Enabled'), default='true')
-    submit = SubmitField(lazy_gettext(u'Submit'))
-
-
-class GroupsForm(FlaskForm):
     test = {'partial': ['open_close_col', 'open_close_prefix_length', 'open_close_padding', 'open_close_suffix_length'],
             'random_date_between': ['open_close_start_date', 'open_close_end_date'],
             'random_phone': ['open_close_prefix'],
             'random_string': ['open_close_length'],
             'partial_email': ['open_close_col'],
             'random_int_between': ['open_close_start', 'open_close_end']}
-    name = StringField(lazy_gettext('Name'), validators=[DataRequired()])
+    name = StringField(lazy_gettext('Name'), id="filter", validators=[DataRequired()],
+                                          description=lazy_gettext("Don't use any blank or special character. This field use like a id"))
+    description = StringField(lazy_gettext('Description'), id="description")
+    group_name = StringField(lazy_gettext('Group Name'), id="autocomplete_groups", validators=[DataRequired()],
+                             description=lazy_gettext('Please search like this(DB.SCHEMA.TABLE.COLUMN)'))
+    filter = StringField(lazy_gettext('Filter'), id="filter",
+                                          description=lazy_gettext('SQL Filter'))
+    table_column = StringField(lazy_gettext('Table Column'), id="autocomplete_table", validators=[DataRequired()],
+                        description=lazy_gettext('Please search like this(DB.SCHEMA.TABLE.COLUMN)'))
     enabled = BooleanField(lazy_gettext('Enabled'), default='true')
     rule = SelectField(lazy_gettext('Rule'),
                        choices=[['send_null', lazy_gettext('Send Null')], ['delete_col', lazy_gettext('Delete Column')],
@@ -52,7 +44,6 @@ class GroupsForm(FlaskForm):
                                 ['random_string', lazy_gettext('Random String')],
                                 ['random_zip', lazy_gettext('Random Zip')]], validators=[DataRequired()],
                        render_kw={"onchange": "test($(this).val()," + json.dumps(test) + ",'open_close')"})
-    desc = StringField(lazy_gettext('Description'), validators=[DataRequired()])
     start_date = DateField(lazy_gettext('Start Date'), format='%Y-%m-%d', default=datetime.datetime(1900, 1, 1),
                            id="open_close_start_date",
                            render_kw={'hidden': True, 'required': False})
@@ -69,6 +60,13 @@ class GroupsForm(FlaskForm):
     padding = StringField(lazy_gettext('Padding'), id="open_close_padding", render_kw={'hidden': True}, default="")
     length = IntegerField(lazy_gettext('Length'), id="open_close_length", render_kw={'hidden': True}, default=0)
     col = HiddenField(id="open_close_col", render_kw={'hidden': True})
+    submit = SubmitField(lazy_gettext(u'Submit'))
+
+
+class GroupsForm(FlaskForm):
+    name = StringField(lazy_gettext('Name'), validators=[DataRequired()])
+    enabled = BooleanField(lazy_gettext('Enabled'), default='true')
+    desc = StringField(lazy_gettext('Description'), validators=[DataRequired()])
     submit = SubmitField(lazy_gettext(u'Submit'))
 
 

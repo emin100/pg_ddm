@@ -200,42 +200,44 @@ class PgQueryOpt
       filter = '/rules/' + @db + '/' + tab['schema'] + '/' + tab['table']
       data   = {}
       @groups.each do |key, value|
-        data = etcd_data(filter + '/' + get_string(ref[-1]) + key)
-        next if data['enabled'].to_s == 'false'
-        break unless data.empty?
+        group = etcd_data(key)
+        next if group['enabled'].to_s == 'false'
+
+        data_temp = etcd_data(filter + '/' + get_string(ref[-1]) + key)
+        next if data_temp['enabled'].to_s == 'false'
+
+        if data_temp.empty?
+          data = {}
+        else
+          data = data_temp
+          break
+        end
       end
+
       unless data.empty?
-        rules_group = etcd_data(data['group_name'])
+        name = if @name.nil?
+                 get_string(ref[-1])
+               elsif @name.is_a?(String)
+                 @name
+               end
 
-        if rules_group['enabled'].to_s == 'true'
-          name = if @name.nil?
-                   get_string(ref[-1])
-                 elsif @name.is_a?(String)
-                   @name
-                 end
+        if data['rule'] == 'send_null'
+          return_column_ref = { 'ResTarget' => { 'name' => name, 'val' => { 'A_Const' => { 'val' => { 'Null' => {} } } } } }
+        elsif data['rule'] == 'delete_col'
+          return_column_ref = { 'del' => 1 }
+        else
+          change_colname = JSON.parse(data['prop'].gsub('%col%', { 'ColumnRef' => { 'fields' => ref } }.to_json))
+          # TODO: Schema is not dynamic
+          func = { 'funcname' => [{ 'String' => { 'str' => 'mask' } }, { 'String' => { 'str' => data['rule'] } }], 'args' => change_colname }
 
-          if rules_group['rule'] == 'send_null'
-            return_column_ref = { 'ResTarget' => { 'name' => name, 'val' => { 'A_Const' => { 'val' => { 'Null' => {} } } } } }
-          elsif rules_group['rule'] == 'delete_col'
-            return_column_ref = { 'del' => 1 }
-          else
-            change_colname = JSON.parse(rules_group['prop'].gsub('%col%', { 'ColumnRef' => { 'fields' => ref } }.to_json))
-            # TODO: Schema is not dynamic
-            func = { 'funcname' => [{ 'String' => { 'str' => 'mask' } }, { 'String' => { 'str' => rules_group['rule'] } }], 'args' => change_colname }
+          return_column_ref = { 'ResTarget' => { 'name' => name, 'val' => { 'FuncCall' => func } } }
+        end
+        if data['filter'] != ''
+          filter_tables               = {}
+          filter_tables[tab['alias']] = tab
 
-            return_column_ref = { 'ResTarget' => { 'name' => name, 'val' => { 'FuncCall' => func } } }
-          end
-          if data['filter'] != ''
-            # ap '----'
-            # print data['group'].split('.')[0...-1]
-            # print tab
-            # ap '----'
-            xx = {}
-            xx[tab['alias']] = tab
-
-            filter_where      = get_filters(xx, data)
-            return_column_ref = { "ResTarget" => { "name" => name, "val" => { "CaseExpr" => { "args" => [{ "CaseWhen" => { "expr" => filter_where[0], "result" => return_column_ref['ResTarget']['val'] } }], "defresult" => { 'ColumnRef' => { 'fields' => ref } } } } } }
-          end
+          filter_where      = get_filters(filter_tables, data)
+          return_column_ref = { "ResTarget" => { "name" => name, "val" => { "CaseExpr" => { "args" => [{ "CaseWhen" => { "expr" => filter_where[0], "result" => return_column_ref['ResTarget']['val'] } }], "defresult" => { 'ColumnRef' => { 'fields' => ref } } } } } }
         end
       end
     end
@@ -254,7 +256,7 @@ class PgQueryOpt
         next if filter.empty?
         next unless filter['enabled'].to_s == 'true'
       else
-        next unless (@db + '.' + table['schema'] + '.' + table['table']) == where_part['group'].split('.')[0...-1].join('.')
+        next unless (@db + '.' + table['schema'] + '.' + table['table']) == where_part['table_column'].split('.')[0...-1].join('.')
 
         filter = where_part
       end
@@ -336,7 +338,6 @@ class PgQueryOpt
             end
             @return_column_ref = {}
           end
-
 
           if !filters.nil? && item == 'SelectStmt'
             if filters.count > 0
