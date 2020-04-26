@@ -13,6 +13,7 @@ struct query_data {
 	VALUE etcd_passwd;
 	VALUE user_regex;
 	VALUE tag_regex;
+	VALUE tag_users;
 	VALUE default_scheme;
 };
 
@@ -25,16 +26,11 @@ VALUE* embeded(VALUE q) {
 
 	parser = rb_const_get(rb_cObject, rb_intern("PgQueryOpt"));
 
-	VALUE xx = rb_funcall(parser, rb_intern("new"), 0);
-//	rb_funcall(xx, rb_intern("set_prop"), 11, data->query_str, data->username,
-//			data->db, data->etcd_host, data->etcd_port, data->etcd_user,
-//			data->etcd_passwd, data->user_regex, data->tag_regex,
-//			data->default_scheme, true);
-//	result = rb_funcall(xx, rb_intern("get_sql"), 0);
-	result = rb_funcall(xx, rb_intern("properties"), 10, data->query_str, data->username,
+	VALUE new_cls = rb_funcall(parser, rb_intern("new"), 0);
+	result = rb_funcall(new_cls, rb_intern("properties"), 11, data->query_str, data->username,
 			data->db, data->etcd_host, data->etcd_port, data->etcd_user,
 			data->etcd_passwd, data->user_regex, data->tag_regex,
-			data->default_scheme);
+			data->default_scheme, data->tag_users);
 
 	return result;
 
@@ -48,8 +44,8 @@ VALUE* embeded_role(VALUE q) {
 
 	parser = rb_const_get(rb_cObject, rb_intern("PgQueryOpt"));
 
-	VALUE xx = rb_funcall(parser, rb_intern("new"), 0);
-	result = rb_funcall(xx, rb_intern("get_role"), 1, data->query_str);
+	VALUE new_cls = rb_funcall(parser, rb_intern("new"), 0);
+	result = rb_funcall(new_cls, rb_intern("get_role"), 1, data->query_str);
 
 	return result;
 
@@ -72,7 +68,7 @@ struct query_return rubycall_role(PgSocket *client, char *username,
 		ruby_script("RewriteQuery");
 		rb_define_module("Gem");
 		rb_require("rubygems");
-		rb_require("/etc/pg_ddm/mask_ruby/parser2.rb");
+		rb_require("/etc/pg_ddm/mask_ruby/parser.rb");
 		loader = 1;
 	}
 
@@ -113,7 +109,7 @@ struct query_return rubycall(PgSocket *client, char *username, char *query_str) 
 		ruby_script("RewriteQuery");
 		rb_define_module("Gem");
 		rb_require("rubygems");
-		rb_require("/etc/pg_ddm/mask_ruby/parser2.rb");
+		rb_require("/etc/pg_ddm/mask_ruby/parser.rb");
 		loader = 1;
 	}
 
@@ -127,6 +123,7 @@ struct query_return rubycall(PgSocket *client, char *username, char *query_str) 
 	q.etcd_passwd = rb_str_new_cstr(cf_etcd_passwd);
 	q.user_regex = rb_str_new_cstr(cf_user_regex);
 	q.tag_regex = rb_str_new_cstr(cf_tag_regex);
+	q.tag_users = rb_str_new_cstr(cf_tag_users);
 	q.default_scheme = rb_str_new_cstr(client->pool->db->search_path);
 
 

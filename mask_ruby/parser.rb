@@ -1,44 +1,82 @@
 require 'pg_query'
 require 'json'
 require 'etcdv3'
+require 'awesome_print'
 require 'hashie'
-# require 'awesome_print'
 
 class PgQueryOpt
-  @etcd                  = nil
-  @etcd_host             = nil
-  @etcd_port             = nil
-  @etcd_user             = nil
-  @etcd_passwd           = nil
-  @sql                   = nil
-  @query_parser          = nil
-  @user_id               = nil
-  @username              = nil
-  @db                    = nil
-  @tag_sql               = nil
-  @return_sql            = nil
-  @query_tree            = nil
-  @user_regex            = nil
-  @default_scheme        = nil
-  @default_scheme_tables = {}
-  @data_in_etcd          = {}
-  @debug                 = 0
+  @sql               = nil
+  @query_parser      = nil
+  @table_list        = []
+  @remove_ref        = 0
+  @etcd              = nil
+  @etcd_host         = 'localhost'
+  @etcd_port         = '2379'
+  @etcd_user         = nil
+  @etcd_passwd       = nil
+  @pass_tag          = ''
+  @tag_regex         = ''
+  @data_in_etcd      = {}
+  @col_list          = {}
+  @ref               = nil
+  @groups            = {}
+  @return_column_ref = {}
+  @in_function       = 0
+  @name              = nil
 
-  def set_prop(sql, username, db, etcd_host, etcd_port, etcd_user, etcd_passwd, user_regex, tag_regex, default_scheme, main_call)
-    @sql         = sql
-    @username    = username
-    @db          = db
-    @etcd_host   = etcd_host
-    @etcd_port   = etcd_port
-    @etcd_user   = etcd_user
-    @etcd_passwd = etcd_passwd
-    @user_regex  = user_regex
-    @tag_regex   = tag_regex
-    return nil unless main_call
+  def properties(sql, username, db, etcd_host, etcd_port, etcd_user, etcd_passwd, user_regex, tag_regex, default_scheme, tag_users)
 
-    @default_scheme        = default_scheme
-    @default_scheme_tables = {}
-    @data_in_etcd          = {}
+    @sql            = sql
+    @username       = username
+    @db             = db
+    @etcd_host      = etcd_host
+    @etcd_port      = etcd_port
+    @etcd_user      = etcd_user
+    @etcd_passwd    = etcd_passwd
+    @user_regex     = user_regex
+    @tag_regex      = tag_regex
+    @data_in_etcd   = {}
+    @default_scheme = default_scheme
+    @in_function    = 0
+    @name           = nil
+
+
+    tag_users = tag_users.delete(' ').split(',')
+    if tag_users.include?(username)
+      @pass_tag = /#{@tag_regex}/.match(@sql)
+      return @sql if @pass_tag
+    end
+
+    conn_etcd
+
+    @query_parser = PgQuery.parse(@sql)
+    @sql          = @sql.strip
+
+    @tag_sql = %r{(?<=^/\*)([^\*]*)(?=\*/)}.match(@sql)
+    @tag_sql = @tag_sql ? '/* ' + @tag_sql[1].strip + ' */' : ''
+
+    if @user_id.nil?
+      @user_id = /#{@user_regex}/.match(@sql)
+
+      @user_id = @user_id[1].strip if @user_id
+    end
+
+    user_to_group
+
+    return @sql if @groups.empty?
+
+    i = 0
+    @query_parser.tree.each do |parse_item|
+      @query_parser.tree[i] = parse(parse_item)
+      i                     += 1
+    end
+
+    @tag_sql + @query_parser.deparse
+  rescue StandardError => e
+    puts e
+    puts e.backtrace.to_s
+    @sql
+
   end
 
   def get_role(sql)
@@ -61,562 +99,346 @@ class PgQueryOpt
     end
   end
 
-  def check_union(tree)
-    unless tree['SelectStmt'].nil?
-      unless tree['SelectStmt']['larg'].nil?
-        subselect_sql = @query_parser.deparse([tree['SelectStmt']['larg']])
-        set_prop(subselect_sql, @username, @db, @etcd_host, @etcd_port, @etcd_user, @etcd_passwd, @user_regex, @tag_regex, @default_scheme, false)
-        tree['SelectStmt']['larg'] = PgQuery.parse(get_sql).tree[0]['RawStmt']['stmt']
-      end
-      unless tree['SelectStmt']['rarg'].nil?
-        subselect_sql = @query_parser.deparse([tree['SelectStmt']['rarg']])
-        set_prop(subselect_sql, @username, @db, @etcd_host, @etcd_port, @etcd_user, @etcd_passwd, @user_regex, @tag_regex, @default_scheme, false)
-        tree['SelectStmt']['rarg'] = PgQuery.parse(get_sql).tree[0]['RawStmt']['stmt']
-      end
-    end
-    tree
+  def conn_etcd
+    return unless @etcd.nil?
+
+    @etcd = if @etcd_user.empty?
+              Etcdv3.new(endpoints: 'http://' + @etcd_host + ':' + @etcd_port, command_timeout: 5)
+            else
+              Etcdv3.new(endpoints: 'http://' + @etcd_host + ':' + @etcd_port, command_timeout: 5, user: @etcd_user, password: @etcd_passwd)
+            end
   end
 
-  def get_subsql(key, return_sql)
-    unless key.nil?
-      common = @query_tree.deep_find_all(key)
-      unless common.nil?
-        common.each do |i|
-          @debug = 1
+  def user_to_group
+    data        = []
+    @groups     = {}
+    key_replace = []
 
-          subselect_sql_orig = @query_parser.deparse([i])
-          i                  = check_union(i)
-
-          subselect_sql = @query_parser.deparse([i])
-          set_prop(subselect_sql, @username, @db, @etcd_host, @etcd_port, @etcd_user, @etcd_passwd, @user_regex, @tag_regex, @default_scheme, false)
-          subselect_sql_changed = get_sql
-          return_sql            = return_sql.gsub subselect_sql_orig, subselect_sql_changed
-        end
-      end
+    unless @username.nil?
+      filter = '/dbuser/' + @username.strip
+      key_replace.push(filter)
+      data += @etcd.get(filter, range_end: filter + '0').kvs
     end
-    return_sql
-  end
 
-  def get_sql
-    begin
-      @pass_tag = /#{@tag_regex}/.match(@sql)
-      return @sql if @pass_tag
-
-      @query_parser = PgQuery.parse(@sql)
-      @sql          = @sql.strip
-      @tag_sql      = /(?<=^\/\*)([^\*]*)(?=\*\/)/.match(@sql)
-      @tag_sql      = @tag_sql ? '/* ' + @tag_sql[1].strip + ' */' : ''
-      if @user_id.nil?
-        @user_id = /#{@user_regex}/.match(@sql)
-
-        @user_id = @user_id[1].strip if @user_id
-      end
-      # if @pass_tag
-      #   @pass_tag = @pass_tag[1].strip
-      #   conn_etcd
-      #   regex_tag = @etcd.get(@pass_tag)
-      #
-      #   if regex_tag.count > 0
-      #     regex_tag = regex_tag.kvs.first.value
-      #
-      #   end
-      # end
-      i = 0
-      for query in @query_parser.tree
-        print query
-        @query_tree = query
-        unless query['RawStmt']['stmt']['SelectStmt'].nil?
-          @query_tree.extend Hashie::Extensions::DeepFind
-          resolve_stars
-          check_rules(nil)
-          add_filter
-        end
-
-        @query_parser.tree[i] = @query_tree
-        i                     += 1
-      end
-
-      return_sql = @query_parser.deparse
-      return_sql = get_subsql('subselect', return_sql)
-      return_sql = get_subsql('ctequery', return_sql)
-      return_sql = get_subsql('subquery', return_sql)
-      # ap @tag_sql + return_sql
-      return @tag_sql + return_sql
-    rescue => e
-      puts e
-      puts e.backtrace.to_s
-      return @sql
+    unless @user_id.nil?
+      filter = '/users/' + @user_id.strip
+      key_replace.push(filter)
+      data += @etcd.get(filter, range_end: filter + '0').kvs
     end
+
+    filter = '/users/*'
+    key_replace.push(filter)
+    data += @etcd.get(filter, range_end: filter + '0').kvs
+
+    filter = '/dbuser/*'
+    key_replace.push(filter)
+    data += @etcd.get(filter, range_end: filter + '0').kvs
+
+
+    i = 0
+    data.each do |val|
+      val_obj = JSON.parse(val.value)
+      if val_obj['enabled'].to_s == 'false'
+        data.delete_at(i)
+      else
+        key = val.key.dup
+        key_replace.each { |key_data| key.gsub! key_data, '' }
+        @groups[key] = {}
+      end
+      i += 1
+    end
+
+    data
   end
 
   def etcd_data(filter_id)
     if @data_in_etcd[filter_id].nil?
-      data                     = @etcd.get(filter_id)
+      data                     = @etcd.get(filter_id, range_end: filter_id + '0')
       @data_in_etcd[filter_id] = data
-
     end
-    @data_in_etcd[filter_id]
+    return {} if @data_in_etcd[filter_id].kvs.count.zero?
+
+    JSON.parse(@data_in_etcd[filter_id].kvs.first.value)
+
   end
 
-  def check_default_scheme(schema, table, p)
-    column = if schema.nil?
-               if table.include? '.'
-                 table
-               else
-                 if @default_scheme_tables[table].nil?
-                   for scheme_name in @default_scheme.split(',') do
-                     table_name    = scheme_name.strip + '.' + table
-                     table_in_etcd = etcd_data('/' + @db + '/' + table_name.tr('.', '/'))
-                     break if table_in_etcd.count > 0
-                   end
-                   @default_scheme_tables[table] = table_name
-                   table_name
-                 else
-                   @default_scheme_tables[table]
-                 end
+  def get_string(node)
+    return node if node.is_a?(String)
+    return node['String']['str'] unless node['String'].nil?
 
-               end
-             else
-               schema + '.' + table
-             end
-    column.tr('.', p)
+    node.to_s
   end
 
-
-  def add_filter
-    @query_parser.tables.each do |col|
-      etcd_schema_table = check_default_scheme(nil, col, '.')
-      etcd_key          = '/sqlfilter/' + @db + '/' + etcd_schema_table.tr('.', '/')
-      filter            = etcd_data(etcd_key)
-      next unless filter.count > 0
-
-      filter_arr = JSON.parse(filter.kvs.first.value)
-      next unless filter_arr['enabled'] == 'true'
-
-
-      search_area = @query_tree['RawStmt']['stmt']['SelectStmt']['fromClause']
-      search_area.extend Hashie::Extensions::DeepFind
-
-      pass = true
-      for x in search_area.deep_find_all('RangeVar')
-        table_name = check_default_scheme(x['schemaname'], x['relname'], '.')
-
-        next unless table_name == etcd_schema_table
-
-        pass  = false
-        sql_w = if x['alias'].nil?
-                  (filter_arr['filter'])
-                else
-                  (filter_arr['filter']).tr('"', '').gsub(etcd_schema_table, x['alias']['Alias']['aliasname'])
-                end
+  def get_alias(node)
+    if node.is_a?(Array)
+      alias_array = []
+      node.each do |col|
+        alias_array.push(get_string(col))
       end
-
-      next if pass
-
-      xx = PgQuery.parse('SELECT WHERE ' + sql_w)
-
-      xx_tree = xx.tree
-
-      filter_w = []
-
-      filter_w.push(xx_tree[0]['RawStmt']['stmt']['SelectStmt']['whereClause'])
-      filter_w.push(@query_tree['RawStmt']['stmt']['SelectStmt']['whereClause']) unless @query_tree['RawStmt']['stmt']['SelectStmt']['whereClause'].nil?
-      @query_tree['RawStmt']['stmt']['SelectStmt']['whereClause'] = { 'BoolExpr' => { 'boolop' => 0, 'args' => filter_w } }
-
-    end
-  end
-
-  def check_exp(column_ref)
-
-    unless column_ref['A_Expr'].nil?
-      unless column_ref['A_Expr']['lexpr'].nil?
-        if column_ref['A_Expr']['lexpr']['A_Expr']
-          column_ref['A_Expr']['lexpr'] = check_exp(column_ref['A_Expr']['lexpr'])
-        end
-        if column_ref['A_Expr']['lexpr']['FuncCall'].nil?
-          rule = make_rules(column_ref['A_Expr']['lexpr'], nil)
-          unless rule.nil? || rule.empty?
-            column_ref['A_Expr']['lexpr']['ColumnRef']['fields'][0] = rule['ResTarget']['val']
-            column_ref['A_Expr']['lexpr']['ColumnRef']['fields'].delete_at(1) if column_ref['A_Expr']['lexpr']['ColumnRef']['fields'].count > 1
-          end
-        else
-          column_ref['A_Expr']['lexpr']['FuncCall']['args'] = check_rules(column_ref['A_Expr']['lexpr']['FuncCall']['args'])
-        end
-      end
-
-      unless column_ref['A_Expr']['rexpr'].nil?
-
-        if column_ref['A_Expr']['rexpr']['A_Expr']
-          column_ref['A_Expr']['rexpr'] = check_exp(column_ref['A_Expr']['rexpr'])
-        end
-        if column_ref['A_Expr']['rexpr']['FuncCall'].nil?
-          rule = make_rules(column_ref['A_Expr']['rexpr'], nil)
-          unless rule.nil?
-            column_ref['A_Expr']['rexpr']['ColumnRef']['fields'][0] = rule['ResTarget']['val']
-            column_ref['A_Expr']['rexpr']['ColumnRef']['fields'].delete_at(1) if column_ref['A_Expr']['rexpr']['ColumnRef']['fields'].count > 1
-          end
-        else
-          column_ref['A_Expr']['rexpr']['FuncCall']['args'] = check_rules(column_ref['A_Expr']['rexpr']['FuncCall']['args'])
-        end
-      end
-    end
-    column_ref
-  end
-
-  def check_rules(column_ref)
-    if column_ref.nil?
-      list = get_column_list
-      i    = -1
-      unless list.nil?
-        list.each do |col|
-          i += 1
-          k = 0
-          unless col['ResTarget']['val']['FuncCall'].nil?
-            col['ResTarget']['val']['FuncCall']['args'].each do |col_ref|
-              if col_ref['FuncCall'].nil?
-                rule                                                                                                     = make_rules(col_ref, nil)
-                @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i]['ResTarget']['val']['FuncCall']['args'][k] = rule['ResTarget']['val'] unless rule.nil?
-
-              else
-                check_rules(col_ref['FuncCall']['args'])
-              end
-
-              k += 1
-            end
-          end
-
-          @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i]['ResTarget']['val'] = check_exp(col['ResTarget']['val'])
-
-
-          next if col['ResTarget']['val']['ColumnRef'].nil?
-
-          rule = make_rules(col['ResTarget']['val'], col['ResTarget']['name'])
-          unless rule.nil?
-            if rule['del'].nil?
-              @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'][i] = rule
-            else
-              @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'].delete_at(i)
-            end
-          end
-        end
-      end
+      alias_array.join('.')
     else
-      j = 0
-      column_ref.each do |col_ref|
-        check_rules(col_ref['FuncCall']['args']) unless col_ref['FuncCall'].nil?
-        col_ref = check_exp(col_ref)
-        rules   = make_rules(col_ref, nil)
-        next if rules.nil?
-
-        if rules['del'].nil?
-          column_ref[j] = rules['ResTarget']['val']
-        else
-          column_ref.delete_at(j)
-        end
-        j += 1
-      end
-      column_ref
-
+      get_string(node)
     end
   end
 
-  def make_rules(column_ref, column_name)
-    rule_list         = {}
-    user_rule_list    = {}
+  def get_col_with_table(schema, table)
+    etcd_data('/' + @db + '/' + schema + '/' + table)
+  end
+
+  # @param [Object] ref
+  # @param [Object] table_list
+  # @return [Hash{null->null}]
+  def mask(ref, table_list)
     return_column_ref = {}
-    return nil if column_ref['ColumnRef'].nil?
+    if ref.count == 1
+      table_list.each do |alias_name, table|
+        next unless table['columns'].find { |col| !col.key(get_string(ref[-1])).nil? }
 
-    col_detail = column_ref['ColumnRef']['fields']
-
-    return nil unless col_detail[0]['A_Star'].nil?
-
-    col_prefix    = ''
-    col_name_last = nil
-    if col_detail.count == 3
-      col_prefix    = '/' + @db + '/' + col_detail[0] + '/' + col_detail[1]
-      col_name_last = col_detail[2]
-    elsif col_detail.count == 2
-      if col_detail[0].is_a?(String)
-        table         = @query_parser.aliases[col_detail[0]]
-        table         = col_detail[0] if table.nil?
-        col_prefix    = change_col_names_for_etcd(table)
-        col_name_last = col_detail[1]
-      else
-        nil unless col_detail[1]['A_Star'].nil?
-        # print col_detail
-
-        table         = @query_parser.aliases[col_detail[0]['String']['str']]
-        col_prefix    = change_col_names_for_etcd(table)
-        col_name_last = col_detail[1]['String']['str'] unless col_detail[1]['String'].nil?
-      end
-    elsif col_detail.count == 1
-      @query_parser.tables.each do |table|
-        xx = etcd_data(change_col_names_for_etcd(table))
-        if xx.count > 0
-          col_detail[0] = col_detail[0]['String']['str'] unless col_detail[0].is_a?(String)
-          if JSON.parse(xx.kvs.first.value).select { |h| h['column_name'] == col_detail[0] }.count > 0
-            col_prefix    = change_col_names_for_etcd(table)
-            col_name_last = col_detail[0]
-          end
-        end
-      end
-
-    end
-    return nil if col_name_last.nil? or col_prefix.nil?
-
-    col_name = '/rules' + col_prefix
-    if rule_list[col_name].nil?
-      rule                = @etcd.get(col_name, range_end: col_name + '0')
-      rule_list[col_name] = {}
-      if rule.count > 0
-        rule.kvs.each do |xx|
-          key = {}
-          if (rule_list[col_name][xx.key.split('/groups')[0]]).nil?
-            key['kvs'] = [xx]
-          else
-            key['kvs'] = rule_list[col_name][xx.key.split('/groups')[0]]['kvs']
-            key['kvs'].push(xx)
-          end
-          key['count'] = key['kvs'].count
-
-          rule_list[col_name][xx.key.split('/groups')[0]] = key
-        end
+        ref = alias_name.split('.') + [get_string(ref[-1])]
+        break
       end
     end
-    rule = rule_list[col_name][col_name + '/' + col_name_last]
 
-    return nil unless !rule.nil? and rule['count'] > 0
+    tab = table_list[get_alias(ref.first(ref.count - 1))] unless table_list.empty?
+    unless tab.nil?
+      filter = '/rules/' + @db + '/' + tab['schema'] + '/' + tab['table']
+      data   = {}
+      @groups.each do |key, value|
+        group = etcd_data(key)
+        next if group['enabled'].to_s == 'false'
 
-    rule['kvs'].each do |rules|
-      group_name = JSON.parse(rules.value)['group_name']
-      user       = nil
-      unless @user_id.nil?
-        if (user_rule_list['/users/' + @user_id + group_name]).nil?
-          user                                              = etcd_data('/users/' + @user_id + group_name)
-          user_rule_list['/users/' + @user_id + group_name] = user
+        data_temp = etcd_data(filter + '/' + get_string(ref[-1]) + key)
+        next if data_temp['enabled'].to_s == 'false'
+
+        if data_temp.empty?
+          data = {}
         else
-          user = user_rule_list['/users/' + @user_id + group_name]
-        end
-        if user.count > 0
-          user = nil if JSON.parse(user.kvs.first.value)['enabled'] == 'false'
+          data = data_temp
+          break
         end
       end
-      if @user_id.nil? or user.nil? or user.count == 0
-        if (user_rule_list['/dbuser/' + @username + group_name]).nil?
-          user                                                = etcd_data('/dbuser/' + @username + group_name)
-          user_rule_list['/dbuser/' + @username + group_name] = user
+
+      unless data.empty?
+        name = if @name.nil?
+                 get_string(ref[-1])
+               elsif @name.is_a?(String)
+                 @name
+               end
+
+        if data['rule'] == 'send_null'
+          return_column_ref = { 'ResTarget' => { 'name' => name, 'val' => { 'A_Const' => { 'val' => { 'Null' => {} } } } } }
+        elsif data['rule'] == 'delete_col'
+          return_column_ref = { 'del' => 1 }
         else
-          user = user_rule_list['/dbuser/' + @username + group_name]
+          change_colname = JSON.parse(data['prop'].gsub('%col%', { 'ColumnRef' => { 'fields' => ref } }.to_json))
+          # TODO: Schema is not dynamic
+          func = { 'funcname' => [{ 'String' => { 'str' => 'mask' } }, { 'String' => { 'str' => data['rule'] } }], 'args' => change_colname }
+
+          return_column_ref = { 'ResTarget' => { 'name' => name, 'val' => { 'FuncCall' => func } } }
         end
-      end
-      next unless user.count > 0
-      next unless JSON.parse(user.kvs.first.value)['enabled'] == 'true'
-      ""
-      group_rule = etcd_data(group_name)
-      next unless group_rule.count > 0
+        if data['filter'] != ''
+          filter_tables               = {}
+          filter_tables[tab['alias']] = tab
 
-      rules_group = JSON.parse(group_rule.kvs.first.value)
-
-      next if rules_group['enabled'] == 'false'
-
-      if rules_group['rule'] == 'send_null'
-        if column_name.nil?
-          col_name = column_ref['ColumnRef']['fields'][-1]
-          col_name = col_name['String']['str'] unless col_name.is_a?(String)
-        else
-          col_name = column_name
+          filter_where      = get_filters(filter_tables, data)
+          return_column_ref = { 'ResTarget' => { 'name' => name, 'val' => { 'CaseExpr' => { 'args' => [{ 'CaseWhen' => { 'expr' => filter_where[0], 'result' => return_column_ref['ResTarget']['val'] } }], 'defresult' => { 'ColumnRef' => { 'fields' => ref } } } } } }
         end
-        return_column_ref = { 'ResTarget' => { 'name' => col_name, 'val' => { 'A_Const' => { 'val' => { 'Null' => {} } } } } }
-      elsif rules_group['rule'] == 'delete_col'
-        return_column_ref = { 'del' => 1 }
-      else
-        # if rules_group['rule'] == "partial"
-        if column_name.nil?
-          col_name = column_ref['ColumnRef']['fields'][-1]
-          col_name = col_name['String']['str'] unless col_name.is_a?(String)
-        else
-          col_name = column_name
-        end
-        xx = JSON.parse(rules_group['prop'].gsub('%col%', column_ref.to_json))
-
-        func = { 'funcname' => [{ 'String' => { 'str' => 'mask' } }, { 'String' => { 'str' => rules_group['rule'] } }], 'args' => xx }
-        # TODO: Schema is not dynamic
-        return_column_ref = { 'ResTarget' => { 'name' => col_name, 'val' => { 'FuncCall' => func } } }
       end
     end
     return_column_ref
   end
 
-  def conn_etcd
-    if @etcd.nil?
-      @etcd = if @etcd_user.empty?
-                Etcdv3.new(endpoints: 'http://' + @etcd_host + ':' + @etcd_port, command_timeout: 5)
-              else
-                Etcdv3.new(endpoints: 'http://' + @etcd_host + ':' + @etcd_port, command_timeout: 5, user: @etcd_user, password: @etcd_passwd)
-              end
-    end
-  end
+  # @param [Object] table_list
+  # @param [Object] where_part
+  def get_filters(table_list, where_part = nil)
+    filter_w = []
+    table_list.each do |alias_name, table|
+      next if table['schema'].nil?
 
-  def get_col_list_in_etcd(table, table_alias, col_alias)
-    columns  = []
-    col_list = etcd_data(table)
-    if col_list.count > 0
-      JSON.parse(col_list.kvs.first.value).each do |val|
-        columns.push([col_alias, table_alias, val['column_name']])
+      if where_part.nil?
+        filter = etcd_data('/sqlfilter/' + @db + '/' + table['schema'] + '/' + table['table'])
+        next if filter.empty?
+        next unless filter['enabled'].to_s == 'true'
+      else
+        next unless (@db + '.' + table['schema'] + '.' + table['table']) == where_part['table_column'].split('.')[0...-1].join('.')
+
+        filter = where_part
       end
+      next if filter['filter'].nil?
+
+      where_condition = filter['filter'].gsub(table['schema'] + '.' + table['table'], alias_name)
+      where_query     = PgQuery.parse('SELECT WHERE ' + where_condition)
+      filter_w.push(where_query.tree[0]['RawStmt']['stmt']['SelectStmt']['whereClause'])
     end
-    columns
+    filter_w
   end
 
-  def star_column(all_fields)
-    unless (@query_tree['RawStmt']['stmt']['SelectStmt']).nil?
-      @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'] = []
-      if all_fields.count > 0
-        all_fields.each do |val|
-          if val.is_a?(Array)
-            extra = val[0]
-            val.delete_at(0)
-            if val[0].include? '.'
-              val_end    = val[0].split('.')
-              val_end[2] = val[1]
-              val        = val_end
+  # @param [Object] items
+  # @param [Array] table_list
+  def parse(items, table_list = [])
+    old_table_list = []
+    return if items.nil?
+
+    if items.is_a?(Hash)
+      if items.keys.is_a?(Array)
+        items.keys.each do |item|
+          case item
+          when 'fields'
+            @ref               = items[item]
+            @return_column_ref = mask(@ref, table_list) if @ref[-1]['A_Star'].nil?
+            @name              = nil
+          when 'name'
+            @name = items[item]
+          when 'ColumnRef'
+            @remove_ref = 3
+          when 'args'
+            @remove_ref = 3
+          when 'funcname'
+            @in_function = 1 if get_string(items[item][0]) == 'count'
+          when 'A_Star'
+            if @in_function.zero?
+              @col_list = {}
+              case @ref.count
+              when 1
+                table_list.each do |alias_name, table|
+                  @col_list[alias_name] = table['columns']
+                end
+              when 2, 3
+                alias_name            = get_alias(@ref.first(@ref.count - 1))
+                @col_list[alias_name] = table_list[alias_name]['columns'] unless table_list[alias_name].nil?
+              else
+                raise 'SQL exception check your alias names (' + get_alias(@ref) + ')'
+              end
+              @remove_ref = 1
+            else
+              @in_function = 0
             end
-            @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'].push({ 'ResTarget' => { 'name' => extra, 'val' => { 'ColumnRef' => { 'fields' => val } } } })
-          elsif !val['A_Star'].nil?
-            @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'].push({ 'ResTarget' => { 'val' => { 'ColumnRef' => { 'fields' => [val] } } } })
-          else
-            @query_tree['RawStmt']['stmt']['SelectStmt']['targetList'].push(val)
+          when 'SelectStmt'
+            old_table_list = table_list
+            table_list     = find_table_list(items[item])
+            filters        = get_filters(table_list)
           end
 
+          parse(items[item], table_list)
+
+          @remove_ref = 2 if item == 'ResTarget' && @remove_ref == 1
+
+
+          if item == 'fields' && @remove_ref == 3 && !@return_column_ref.nil?
+            unless @return_column_ref.empty?
+              items.delete(item)
+              items[item] = [@return_column_ref['ResTarget']['val']]
+            end
+            @return_column_ref = {}
+          end
+
+          if item == 'ResTarget' && !@return_column_ref.nil?
+            unless @return_column_ref.empty?
+              if @return_column_ref['del'].nil?
+                items[item] = @return_column_ref['ResTarget']
+              else
+                items.delete(item)
+              end
+            end
+            @return_column_ref = {}
+          end
+
+          if !filters.nil? && item == 'SelectStmt'
+            if filters.count > 0
+              filters.push(items['SelectStmt']['whereClause']) unless items['SelectStmt']['whereClause'].nil?
+              items['SelectStmt']['whereClause'] = { 'BoolExpr' => { 'boolop' => 0, 'args' => filters } }
+            end
+          end
+
+          table_list = old_table_list if item == 'SelectStmt'
         end
       end
     end
-  end
 
-  def get_column_list
-    list = if @query_tree['RawStmt']['stmt']['SelectStmt'].nil?
-             []
-           else
-             @query_tree['RawStmt']['stmt']['SelectStmt']['targetList']
-           end
-    list
-  end
+    if items.is_a?(Array)
+      i = 0
+      items.each do |item|
+        parse(item, table_list)
 
-  def change_col_names_for_etcd(table)
-    if !table.nil?
-      '/' + @db + '/' + check_default_scheme(nil, table, '/')
-    else
-      table
+        reparse = 0
+        unless item.nil?
+          if item.empty?
+            items.delete_at(i)
+            reparse = 1
+          end
+        end
+
+        if @remove_ref == 2
+          k = 1
+
+          @col_list.each do |alias_name, alias_table|
+            next if alias_table.nil?
+
+            if alias_table.count > 0 && reparse.zero?
+              reparse = 1
+              items.delete_at(i)
+              k -= 1
+            end
+            alias_table.each do |col|
+              fields = alias_name.split('.').push(col['column_name'])
+              items.insert(i + k, 'ResTarget' => { 'val' => { 'ColumnRef' => { 'fields' => fields } } })
+              k += 1
+            end
+          end
+          @col_list   = {}
+          @remove_ref = 0
+
+        end
+        parse(items[i], table_list) if reparse == 1
+        i += 1
+      end
     end
+
+    items
   end
 
-  def find_table_list(tree)
-    table_list = []
-    if tree.kind_of?(Array)
-      for k in tree
-        table_list += find_table_list(k)
+  def find_table_list(tree, table_list = {})
+    key_list = %w[SelectStmt fromClause JoinExpr larg rarg]
+    if tree.is_a?(Array)
+      tree.each do |k|
+        find_table_list(k, table_list)
       end
     else
-
-      table_list += find_table_list(tree['SelectStmt']) unless tree['SelectStmt'].nil?
-      table_list += find_table_list(tree['fromClause']) unless tree['fromClause'].nil?
-      table_list += find_table_list(tree['JoinExpr']) unless tree['JoinExpr'].nil?
-      table_list += find_table_list(tree['larg']) unless tree['larg'].nil?
-      table_list += find_table_list(tree['rarg']) unless tree['rarg'].nil?
+      tree.keys.each do |key|
+        find_table_list(tree[key], table_list) if key_list.include?(key)
+      end
 
       unless tree['RangeVar'].nil?
+        table          = {}
+        table['table'] = tree['RangeVar']['relname']
         if tree['RangeVar']['schemaname'].nil?
-          table_list.push(tree['RangeVar']['relname'])
+          unless @default_scheme.nil?
+            @default_scheme.split(',').each do |scheme|
+              scheme           = scheme.strip
+              table_defination = get_col_with_table(scheme, table['table'])
+              next if table_defination.empty?
+
+              table['schema'] = scheme
+              break
+            end
+          end
         else
-          table_list.push(tree['RangeVar']['schemaname'] + '.' + tree['RangeVar']['relname'])
+          table['schema'] = tree['RangeVar']['schemaname']
         end
+        table['alias']             = if tree['RangeVar']['alias'].nil?
+                                       if tree['RangeVar']['schemaname'].nil?
+                                         table['table']
+                                       else
+                                         table['schema'] + '.' + table['table']
+                                       end
+                                     else
+                                       tree['RangeVar']['alias']['Alias']['aliasname']
+                                     end
+
+        table['columns']           = get_col_with_table(table['schema'], table['table']) unless table['schema'].nil?
+        table_list[table['alias']] = table
       end
     end
     table_list
-  end
-
-  def resolve_stars
-    conn_etcd
-    all_fields = []
-
-    xx = @query_parser.tree
-    xx.extend Hashie::Extensions::DeepFind
-
-    unless @query_tree['RawStmt']['stmt']['SelectStmt'].nil?
-      # @query_tree['RawStmt']['stmt'] = check_union(@query_tree['RawStmt']['stmt'])
-      table_list = find_table_list(@query_tree['RawStmt']['stmt']['SelectStmt'])
-      unless get_column_list.nil?
-        get_column_list.each do |name|
-          i     = 0
-          field = []
-          if !name['ResTarget']['val']['ColumnRef'].nil?
-            col_alias = nil
-            col_alias = name['ResTarget']['name'] if name['ResTarget']['name']
-            field.push(col_alias)
-
-            field_list = name['ResTarget']['val']['ColumnRef']['fields']
-            field_list.each do |list|
-              if list['A_Star']
-                if table_list.count > 0
-                  if i == 1
-                    table_alias = field_list[0]['String']['str']
-                    table       = @query_parser.aliases[table_alias]
-                    if table.nil?
-                      cvcv = []
-                      cvcv.push(nil)
-                      all_fields.concat([cvcv.concat(field_list)])
-                    else
-                      all_fields.concat(get_col_list_in_etcd(change_col_names_for_etcd(table), table_alias, col_alias))
-                    end
-                  else
-                    col_names   = []
-                    last_add    = false
-                    search_area = @query_tree['RawStmt']['stmt']['SelectStmt']['fromClause']
-                    search_area.extend Hashie::Extensions::DeepFind
-
-                    search_area.deep_find_all('RangeVar').each do |val|
-                      table = check_default_scheme(val['schemaname'], val['relname'], '.')
-
-                      table_alias = if val['alias'].nil?
-                                      table
-                                    else
-                                      val['alias']['Alias']['aliasname']
-                                    end
-                      col_names   = get_col_list_in_etcd(change_col_names_for_etcd(table), table_alias, col_alias)
-
-                      if col_names.nil? || col_names.count.zero?
-                        last_add = true
-                        all_fields.push(list)
-                      else
-                        last_add = false
-                        all_fields.concat(col_names)
-                      end
-                    end
-                    all_fields.push(list) if (col_names.nil? || col_names.count.zero?) && last_add == false
-                  end
-                else
-                  all_fields.push(list)
-                end
-                field = []
-              else
-                field.push(list)
-              end
-              i += 1
-            end
-            all_fields.push(field) if field.count > 0
-          else
-            all_fields.push(name)
-          end
-        end
-      end
-    end
-    if all_fields.count > 0
-      star_column(all_fields)
-    end
-    all_fields
-  end
-
-  def tree
-    @query_parser.tree
   end
 end

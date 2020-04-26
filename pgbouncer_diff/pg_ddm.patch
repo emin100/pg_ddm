@@ -180,7 +180,7 @@ index cc1d6ad..e83c3d4 100644
 -	$(MAKE) -C ../../pgbouncer.github.io
 +	$(MAKE) -C ../../pg_ddm.github.io
 diff --git a/include/bouncer.h b/include/bouncer.h
-index b9f2b9f..3750b8f 100644
+index b9f2b9f..97e3b62 100644
 --- a/include/bouncer.h
 +++ b/include/bouncer.h
 @@ -100,6 +100,8 @@ typedef struct ScramState ScramState;
@@ -204,7 +204,7 @@ index b9f2b9f..3750b8f 100644
  };
  
  
-@@ -530,6 +537,15 @@ extern char *cf_server_tls_ca_file;
+@@ -530,6 +537,16 @@ extern char *cf_server_tls_ca_file;
  extern char *cf_server_tls_cert_file;
  extern char *cf_server_tls_key_file;
  extern char *cf_server_tls_ciphers;
@@ -214,6 +214,7 @@ index b9f2b9f..3750b8f 100644
 +extern char *cf_etcd_passwd;
 +extern char *cf_user_regex;
 +extern char *cf_tag_regex;
++extern char *cf_tag_users;
 +extern int cf_pg_ddm_enabled;
 +extern int cf_pg_ddm_ini_route;
 +extern int cf_pg_ddm_rewrite_route;
@@ -326,10 +327,10 @@ index 11b4bee..589a7e6 100644
  	db->db_dead = 0;
  	/* assuming not an autodb */
 diff --git a/src/main.c b/src/main.c
-index 43d6582..86cfc15 100644
+index 43d6582..491d92b 100644
 --- a/src/main.c
 +++ b/src/main.c
-@@ -169,6 +169,15 @@ char *cf_server_tls_ca_file;
+@@ -169,6 +169,16 @@ char *cf_server_tls_ca_file;
  char *cf_server_tls_cert_file;
  char *cf_server_tls_key_file;
  char *cf_server_tls_ciphers;
@@ -339,13 +340,14 @@ index 43d6582..86cfc15 100644
 +char *cf_etcd_passwd;
 +char *cf_user_regex;
 +char *cf_tag_regex;
++char *cf_tag_users;
 +int cf_pg_ddm_enabled;
 +int cf_pg_ddm_ini_route;
 +int cf_pg_ddm_rewrite_route;
  
  /*
   * config file description
-@@ -306,6 +315,16 @@ CF_ABS("server_tls_key_file", CF_STR, cf_server_tls_key_file, CF_NO_RELOAD, ""),
+@@ -306,6 +316,17 @@ CF_ABS("server_tls_key_file", CF_STR, cf_server_tls_key_file, CF_NO_RELOAD, ""),
  CF_ABS("server_tls_protocols", CF_STR, cf_server_tls_protocols, CF_NO_RELOAD, "secure"),
  CF_ABS("server_tls_ciphers", CF_STR, cf_server_tls_ciphers, CF_NO_RELOAD, "fast"),
  
@@ -355,6 +357,7 @@ index 43d6582..86cfc15 100644
 +CF_ABS("etcd_passwd", CF_STR, cf_etcd_passwd, CF_NO_RELOAD, ""),
 +CF_ABS("user_regex", CF_STR, cf_user_regex, CF_NO_RELOAD, ""),
 +CF_ABS("tag_regex", CF_STR, cf_tag_regex, CF_NO_RELOAD, ""),
++CF_ABS("tag_users", CF_STR, cf_tag_users, CF_NO_RELOAD, ""),
 +CF_ABS("pg_ddm_enabled", CF_INT, cf_pg_ddm_enabled, CF_NO_RELOAD, "1"),
 +CF_ABS("pg_ddm_ini_route", CF_INT, cf_pg_ddm_ini_route, CF_NO_RELOAD, "0"),
 +CF_ABS("pg_ddm_rewrite_route", CF_INT, cf_pg_ddm_rewrite_route, CF_NO_RELOAD, "0"),
@@ -362,7 +365,7 @@ index 43d6582..86cfc15 100644
  {NULL}
  };
  
-@@ -828,6 +847,13 @@ static void cleanup(void)
+@@ -828,6 +849,14 @@ static void cleanup(void)
  	xfree(&cf_server_tls_key_file);
  	xfree(&cf_server_tls_ciphers);
  
@@ -372,6 +375,7 @@ index 43d6582..86cfc15 100644
 +    xfree(&cf_etcd_passwd);
 +    xfree(&cf_user_regex);
 +    xfree(&cf_tag_regex);
++    xfree(&cf_tag_users);
 +
  	xfree((char **)&cf_logfile);
  	xfree((char **)&cf_syslog_ident);
