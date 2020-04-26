@@ -253,22 +253,34 @@ class PgQueryOpt
   def get_filters(table_list, where_part = nil)
     filter_w = []
     table_list.each do |alias_name, table|
+      filter_list  = []
       next if table['schema'].nil?
 
       if where_part.nil?
-        filter = etcd_data('/sqlfilter/' + @db + '/' + table['schema'] + '/' + table['table'])
-        next if filter.empty?
-        next unless filter['enabled'].to_s == 'true'
+        @groups.each do |key, value|
+          filter_temp = etcd_data('/sqlfilter/' + @db + '/' + table['schema'] + '/' + table['table'] + key)
+          next if filter_temp.empty?
+          next if filter_temp['enabled'].to_s == 'false'
+
+          filter_list.push(filter_temp)
+        end
+        filter_temp = etcd_data('/sqlfilter/' + @db + '/' + table['schema'] + '/' + table['table'] + '/*')
+
+        unless filter_temp.empty?
+          filter_list.push(filter_temp) if filter_temp['enabled'].to_s == 'true'
+        end
       else
         next unless (@db + '.' + table['schema'] + '.' + table['table']) == where_part['table_column'].split('.')[0...-1].join('.')
 
-        filter = where_part
+        filter_list.push(where_part)
       end
-      next if filter['filter'].nil?
+      next if filter_list.count.zero?
 
-      where_condition = filter['filter'].gsub(table['schema'] + '.' + table['table'], alias_name)
-      where_query     = PgQuery.parse('SELECT WHERE ' + where_condition)
-      filter_w.push(where_query.tree[0]['RawStmt']['stmt']['SelectStmt']['whereClause'])
+      filter_list.each do |filter|
+        where_condition = filter['filter'].gsub(table['schema'] + '.' + table['table'], alias_name)
+        where_query     = PgQuery.parse('SELECT WHERE ' + where_condition)
+        filter_w.push(where_query.tree[0]['RawStmt']['stmt']['SelectStmt']['whereClause'])
+      end
     end
     filter_w
   end

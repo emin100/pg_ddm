@@ -540,8 +540,11 @@ def sqlfilter(url_type=None):
             enabled = 'false'
             if form.enabled.data:
                 enabled = 'true'
-            etcd_conn.put('/sqlfilter/' + form.table.data.replace('.', '/'),
-                          '{"filter":"' + form.filter.data + '", "enabled": "'+enabled+'"}')
+            if form.group_name.data == '':
+                form.group_name.data = '*'
+            row = { "filter": form.filter.data, "group_name": form.group_name.data, "enabled": enabled }
+            etcd_conn.put('/sqlfilter/' + form.table.data.replace('.', '/') + '/' + form.group_name.data.replace('.', '/'),
+                json.dumps(row))
             flash(_('SQL Filter') + ' ' + _('Added'), 'info')
             return flask.redirect(flask.url_for('sqlfilter'))
         elif flask.request.args.get('key'):
@@ -550,7 +553,9 @@ def sqlfilter(url_type=None):
             if form_data.get('enabled') == 'true':
                 form.enabled.data = True
             form.filter.data = form_data.get('filter')
-            form.table.data = flask.request.args.get('key').replace('/sqlfilter/', '').replace('/', '.')
+            form.group_name.data = form_data.get('group_name')
+            form.table.data = flask.request.args.get('key').replace('/sqlfilter/', '').replace('/', '.').replace('.'+form_data.get('group_name'), '')
+            form.group_name.render_kw = {'readonly': True}
             form.table.render_kw = {'readonly': True}
         return flask.render_template('list.html', main_header=_('SQL Filter'), form=form, button_list=button_list)
     elif url_type == 'delete':
@@ -558,7 +563,7 @@ def sqlfilter(url_type=None):
         flash(_('SQL Filter') + ' ' + _('Deleted'), 'error')
 
     group_list = etcd_conn.search('/sqlfilter/')
-    headers = [_('Table'), _('SQL Filter'), _('Enabled')]
+    headers = [_('Table'), _('Enabled'), _('SQL Filter'), _('Group Name')]
     links = [{'name': _('Delete'), 'type': 'danger', 'link': '/sqlfilter/delete'},
              {'name': _('Update'), 'type': 'info', 'link': '/sqlfilter/change'}]
 

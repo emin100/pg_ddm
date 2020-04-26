@@ -121,7 +121,7 @@ class PassTagForm(FlaskForm):
 class SQLFilterForm(FlaskForm):
     table = StringField(lazy_gettext('Table'), id="autocomplete_table", validators=[DataRequired()],
                         description=lazy_gettext('Please search like this(DB.SCHEMA.TABLE)'))
-
+    group_name = StringField(lazy_gettext('Group Name'), id="autocomplete_groups")
     filter = StringField(lazy_gettext('SQL Filter'), validators=[DataRequired()])
     enabled = BooleanField(lazy_gettext('Enabled'), default='true')
 
