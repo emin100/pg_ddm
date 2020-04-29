@@ -23,6 +23,7 @@ class PgQueryOpt
   @return_column_ref = {}
   @in_function       = 0
   @name              = nil
+  @mask              = true
 
   def properties(sql, username, db, etcd_host, etcd_port, etcd_user, etcd_passwd, user_regex, tag_regex, default_scheme, tag_users)
 
@@ -39,6 +40,7 @@ class PgQueryOpt
     @default_scheme = default_scheme
     @in_function    = 0
     @name           = nil
+    @mask           = true
 
 
     tag_users = tag_users.delete(' ').split(',')
@@ -253,7 +255,7 @@ class PgQueryOpt
   def get_filters(table_list, where_part = nil)
     filter_w = []
     table_list.each do |alias_name, table|
-      filter_list  = []
+      filter_list = []
       next if table['schema'].nil?
 
       if where_part.nil?
@@ -297,7 +299,7 @@ class PgQueryOpt
           case item
           when 'fields'
             @ref               = items[item]
-            @return_column_ref = mask(@ref, table_list) if @ref[-1]['A_Star'].nil?
+            @return_column_ref = mask(@ref, table_list) if @ref[-1]['A_Star'].nil? if @mask == true
             @name              = nil
           when 'name'
             @name = items[item]
@@ -329,6 +331,9 @@ class PgQueryOpt
             old_table_list = table_list
             table_list     = find_table_list(items[item])
             filters        = get_filters(table_list)
+            @mask = true
+          when 'whereClause'
+            @mask = false
           end
 
           parse(items[item], table_list)
