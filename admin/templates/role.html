@@ -1,0 +1,23 @@
+{% extends "list.html" %}
+{% block scripts %}
+{{ super() }}
+<script type="text/javascript">
+    $(function () {
+        $('#service').trigger("change");
+    });
+    function service_change(val) {
+        val_list = ["autocomplete_groups", "autocomplete_role", "enabled"]
+        if(val == 'None'){
+            $.each( val_list, function( key, value ) {
+                $('label[for^="'+value+'"]').hide();
+                $('input[id^="'+value+'"]').hide();
+            });
+        }else {
+            $.each( val_list, function( key, value ) {
+                $('#'+value).removeAttr('hidden').show();
+                $('label[for="'+value+'"]').show();
+            });
+        }
+    }
+</script>
+{% endblock %}

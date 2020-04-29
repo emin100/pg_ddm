@@ -1,4 +1,5 @@
 import configparser
+import os
 from urllib.parse import urlparse, urljoin
 
 import flask
@@ -10,12 +11,10 @@ from flask_babel import Babel, _
 from flask_bootstrap import Bootstrap
 from flask_login import LoginManager, logout_user, login_required, login_user
 from models import User
-import uuid
 
 babel = Babel()
 login_manager = LoginManager()
-config_filepath = '/etc/pg_ddm/pg_ddm.ini'
-
+config_filepath = os.path.dirname(os.path.abspath(__file__)) + '/conf/settings.cfg'
 config = configparser.RawConfigParser(allow_no_value=True)
 config.read(config_filepath)
 
@@ -64,10 +63,11 @@ def get_locale():
 #         return user.timezone
 
 
-def pagination(total):
+def pagination(total, extra=''):
+    import math
     page = 1
-    row_in_page = 20
-    total_page = int(total / row_in_page) + 1
+    row_in_page = int(config['general']['row_in_page'])
+    total_page = math.ceil(total / row_in_page)
 
     if request.args.get('page') is not None:
         page = int(request.args.get('page'))
@@ -86,10 +86,15 @@ def pagination(total):
         start = 1
     if end > total_page:
         end = total_page
-    # print({'total': total, 'page': page, 'total_page': total_page, 'row_in_page': row_in_page, 'start': start,
-    #                   'end': end})
+
     return {'total': total, 'page': page, 'total_page': total_page, 'row_in_page': row_in_page, 'start': start,
-            'end': end}
+            'end': end, 'extra': extra}
+
+
+def get_calculated_page(data_list, page):
+    return data_list[(int(page.get('page')) - 1) * int(
+        page.get('row_in_page')): ((int(page.get('page')) - 1) * int(
+        page.get('row_in_page'))) + int(page.get('row_in_page'))]
 
 
 @app.route('/')
@@ -149,72 +154,241 @@ def login():
     return flask.render_template('login.html', form=form)
 
 
+@app.route('/external_services', methods=['GET', 'POST'])
+@app.route('/external_services/<url_type>', methods=['GET', 'POST'])
+@login_required
+def external_services(url_type=None):
+    etcd_conn = Etcd()
+    headers = [_('Name'), _('Description'), _('Enabled')]
+    button_list = [{'name': _('New'), 'href': '/external_services/change'},
+                   {'name': _('List'), 'href': '/external_services'}]
+    if url_type == 'change':
+        form = forms.ServicesForm()
+
+        if form.validate_on_submit():
+            status = 'false'
+            if form.enabled.data is True:
+                status = 'true'
+            row = {"enabled": status, "name": form.name.data, "role_service_url": form.role_service_url.data,
+                   "role_service_param": form.role_service_param.data, "role_service_key": form.role_service_key.data,
+                   "role_service_value": form.role_service_value.data, "user_service_url": form.user_service_url.data,
+                   "user_service_key": form.user_service_key.data, "user_service_param": form.user_service_param.data,
+                   "username": form.username.data, "password": form.password.data
+                   }
+            etcd_conn.put('/services/' + form.name.data.lower().replace(' ', '_'),
+                          json.dumps(row))
+            flash(_('Service') + ' ' + _('Added'), 'info')
+            return flask.redirect(flask.url_for('external_services'))
+        elif flask.request.args.get('key'):
+            form_data = etcd_conn.get_list(flask.request.args.get('key'))
+            form.enabled.data = False
+            if form_data.get('enabled') == 'true':
+                form.enabled.data = True
+            form.role_service_url.data = form_data.get('role_service_url')
+            form.role_service_param.data = form_data.get('role_service_param')
+            form.role_service_key.data = form_data.get('role_service_key')
+            form.role_service_value.data = form_data.get('role_service_value')
+            form.user_service_url.data = form_data.get('user_service_url')
+            form.user_service_key.data = form_data.get('user_service_key')
+            form.user_service_param.data = form_data.get('user_service_param')
+            form.username.data = form_data.get('username')
+            form.password.data = form_data.get('password')
+            # form.name.data = flask.request.args.get('key').replace('/services/', '')
+            form.name.data = form_data.get('name')
+            form.name.render_kw = {'readonly': True}
+        return flask.render_template('list.html', main_header=_('Register Services'), form=form,
+                                     button_list=button_list)
+    elif url_type == 'delete':
+        etcd_conn.delete(flask.request.args.get('key'))
+        flash(_('Service') + ' ' + _('Deleted'), 'error')
+    group_list = etcd_conn.search('/services/')
+    page = pagination(len(group_list))
+    links = [{'name': _('Delete'), 'type': 'danger', 'link': '/external_services/delete'},
+             {'name': _('Update'), 'type': 'info', 'link': '/external_services/change'}]
+    return flask.render_template('list.html', main_header=_('Services'),
+                                 list=get_calculated_page(group_list, page), pagination=page,
+                                 headers=headers, button_list=button_list, links=links)
+
+
+@app.route('/role_to_group', methods=['GET', 'POST'])
+@app.route('/role_to_group/<url_type>', methods=['GET', 'POST'])
+@login_required
+def role_to_group(url_type=None):
+    etcd_conn = Etcd()
+    button_list = [{'name': _('New'), 'href': '/role_to_group/change'}, {'name': _('List'), 'href': '/role_to_group'}]
+    if url_type == 'change':
+        form = forms.RoleForm()
+        service_list = [(None, _('Select'))]
+        for x in etcd_conn.search('/services'):
+            service_list.append((str(x[1].key.decode("utf-8")), str(x[0].get('name'))))
+        form.service.choices = service_list
+        if form.validate_on_submit():
+            try:
+                status = 'false'
+                if form.enabled.data:
+                    status = 'true'
+                key = '/role_to_group/' + form.group_name.data.replace('.', '/') + "/" + str(form.role_id.data)
+                etcd_conn.put(key, json.dumps(
+                    {"enabled": status, "group": form.role.data, "service_key": form.service.data}))
+            except Exception as error:
+                print(error)
+
+            flash(_('Role to Group') + ' ' + _('Updated'), 'success')
+            return flask.redirect('/role_to_group/refresh?key={}'.format(key))
+        elif flask.request.args.get('key'):
+            parse_key = flask.request.args.get('key').split('/')
+            form_data = etcd_conn.get_list(flask.request.args.get('key'))
+            form.enabled.data = False
+            if form_data.get('enabled') == 'true':
+                form.enabled.data = True
+            form.service.data = form_data.get('service_key')
+            form.group_name.data = parse_key[2] + '.' + parse_key[3]
+            form.role.data = form_data.get('group')
+            form.role_id.data = parse_key[4]
+            form.group_name.render_kw = {'readonly': True}
+            form.role.render_kw = {'readonly': True}
+        return flask.render_template('role.html', main_header=_('Role to Group'), form=form, button_list=button_list)
+    elif url_type == 'delete':
+        parse_key = flask.request.args.get('key').split('/')
+        for x in etcd_conn.get_prefix('/users/', sort_order="ascend", sort_target="key"):
+            parse_user_key = str(x[1].key.decode("utf-8")).split('/')
+            # print(parse_user_key)
+            if parse_user_key[3] == parse_key[2] and parse_user_key[4] == parse_key[3]:
+                etcd_conn.delete(x[1].key.decode("utf-8"))
+        etcd_conn.delete(flask.request.args.get('key'))
+        flash(_('Role to Group') + ' ' + _('Deleted'), 'error')
+    elif url_type == 'refresh':
+        key = flask.request.args.get('key')
+        parse_key = key.split('/')
+        role_to_group = etcd_conn.get_list(key)
+
+        status = role_to_group.get('enabled')
+
+        service = etcd_conn.get_list(role_to_group.get('service_key'))
+        import requests
+
+        r = requests.post(service.get('user_service_url'),
+                          json={service.get('user_service_param'): parse_key[4]},
+                          auth=(service.get('username'), service.get('password')))
+        for row in r.json():
+            id = row.get(service.get('user_service_key'))
+            key = '/users/{}/{}/{}'.format(str(id), parse_key[2], parse_key[3])
+            try:
+                user = etcd_conn.get_list(key)
+                if user.get('enabled') != status:
+                    etcd_conn.put(key, json.dumps({"enabled": status}))
+            except:
+                etcd_conn.put(key, json.dumps({"enabled": status}))
+
+        flash(_('Role to Group') + ' ' + _('Refreshed'), 'success')
+    group_list = etcd_conn.search('/role_to_group/')
+    links = [{'name': _('Delete'), 'type': 'danger', 'link': '/role_to_group/delete'},
+             {'name': _('Update'), 'type': 'info', 'link': '/role_to_group/change'},
+             {'name': _('Refresh'), 'type': 'success', 'link': '/role_to_group/refresh'}]
+    return flask.render_template('list.html', main_header=_('Role to Group'), button_list=button_list, list=group_list,
+                                 links=links)
+
+
 @app.route('/tables', methods=['GET', 'POST'])
 @app.route('/tables/<url_type>', methods=['GET', 'POST'])
 @login_required
 def tables(url_type=None):
     etcd_conn = Etcd()
+    try:
+        pg_ddm_config = configparser.RawConfigParser(allow_no_value=True)
 
-    config.read(config_filepath)
-    db_list = []
-    for db in config['databases']:
-        db_list.append((db, db))
+        if str(config['general']['get_db_info_in_pg_ddm_config_file']).lower() == 'true':
+            pg_ddm_config.read(config['general']['pg_ddm_config_file_path'])
+            databases = pg_ddm_config['databases']
+        else:
+            databases = config['database']
 
-    button_list = [{'name': _('Update'), 'href': '/tables/change'}, {'name': _('List'), 'href': '/tables'}]
+        db_list = []
+        conn_info = {}
+        for db in databases:
+            db_list.append((db, db))
+            key_list = {}
+            for i in databases[db].split(" "):
+                key = i.split("=")
+                key_list[key[0]] = key[1]
+            conn_info[db] = key_list
 
-    if url_type == 'change':
-        form = forms.TablesForm()
+        form = forms.TableSelectForm()
         form.db.choices = db_list
-        if form.validate_on_submit():
-            conn = None
-            try:
-                db = config['databases'][form.db.data]
-                conn = psycopg2.connect(db, user=form.username.data, password=form.password.data)
-                cur = conn.cursor()
-                cur.execute("""SELECT i.table_catalog,i.table_schema,i.table_name,(
-                                 SELECT array_to_json(array_agg(col_array)) FROM (
-                                     SELECT i2.column_name,i2.data_type 
-                                     FROM information_schema.columns i2
-                                     WHERE i2.table_catalog = i.table_catalog 
-                                     AND i2.table_schema = i.table_schema 
-                                     AND i2.table_name = i.table_name
-                    
-                                 ) col_array
-                                ) FROM information_schema.columns i
-                                 WHERE i.table_schema NOT IN ('pg_catalog','information_schema','mask')
-                                 GROUP BY 1,2,3""")
 
-                for row in cur.fetchall():
-                    key = '/{}/{}/{}'.format(str(form.db.data), str(row[1]), str(row[2]))
-                    print(key)
-                    etcd_conn.put(key, json.dumps(row[3]))
-                cur.close()
-            except (Exception, psycopg2.DatabaseError) as error:
-                flash(_('DB Error'), 'error')
-            finally:
-                if conn is not None:
-                    conn.close()
+        button_list = [{'name': _('Update'), 'href': '/tables/change'}, {'name': _('List'), 'href': '/tables'}]
 
-            flash(_('Tables') + ' ' + _('Updated'), 'info')
-            return flask.redirect(flask.url_for('tables'))
+        # if url_type == 'update':
+        #     print('update')
+        if url_type == 'change':
+            if form.validate_on_submit():
+                form_cred = forms.TablesForm()
+                if form.db.data is not None:
+                    if 'user' in conn_info[form.db.data]:
+                        form_cred.username.data = conn_info[form.db.data]['user']
+                    if 'password' in conn_info[form.db.data]:
+                        form_cred.password.data = conn_info[form.db.data]['password']
+                form_cred.db.data = form.db.data
 
-        return flask.render_template('list.html', main_header=_('Tables'), form=form, button_list=button_list)
-    else:
-        form_db = forms.TableSelectForm()
-        form_db.db.choices = db_list
-        if form_db.validate_on_submit():
-            group_list = etcd_conn.search('/{}/'.format(str(form_db.db.data)), json_field=False)
-            headers = [_('Name'), _('Group Name')]
-            links = [{'name': _('Update'), 'type': 'danger', 'link': '/tables/update'}]
-            page = pagination(len(group_list))
+                if form_cred.validate_on_submit():
+                    conn = None
+                    try:
+                        db = databases[form.db.data]
+                        conn = psycopg2.connect(db, user=form_cred.username.data, password=form_cred.password.data)
+                        cur = conn.cursor()
+                        cur.execute("""SELECT i.table_catalog,i.table_schema,i.table_name,(
+                                         SELECT array_to_json(array_agg(col_array)) FROM (
+                                             SELECT i2.column_name,i2.data_type
+                                             FROM information_schema.columns i2
+                                             WHERE i2.table_catalog = i.table_catalog
+                                             AND i2.table_schema = i.table_schema
+                                             AND i2.table_name = i.table_name
 
-            return flask.render_template('list.html', main_header=_('Tables'),
-                                         list=group_list[(int(page.get('page')) - 1) * int(
-                                             page.get('row_in_page')):((int(page.get('page')) - 1) * int(
-                                             page.get('row_in_page'))) + int(page.get('row_in_page'))],
-                                         headers=headers,
-                                         links=links, button_list=button_list, pagination=page)
-        return flask.render_template('list.html', main_header=_('Tables'), form=form_db, button_list=button_list)
+                                         ) col_array
+                                        ) FROM information_schema.columns i
+                                         WHERE i.table_schema NOT IN ('pg_catalog','information_schema','mask')
+                                         GROUP BY 1,2,3""")
+
+                        for row in cur.fetchall():
+                            key = '/{}/{}/{}'.format(str(form.db.data), str(row[1]), str(row[2]))
+                            # etcd_conn.put(key, json.dumps(row[3]))
+                        cur.close()
+                    except (Exception, psycopg2.DatabaseError):
+                        flash(_('DB Error'), 'error')
+                    except (Exception, psycopg2.DatabaseError):
+                        flash(_('General Error'), 'error')
+                    finally:
+                        if conn is not None:
+                            conn.close()
+
+                    flash(_('Tables') + ' ' + _('Updated'), 'info')
+                    return flask.redirect(flask.url_for('tables'))
+                return flask.render_template('list.html', main_header=_('Database connection'), form=form_cred,
+                                             button_list=button_list)
+            return flask.render_template('list.html', main_header=_('Database select'), form=form,
+                                         button_list=button_list)
+        else:
+            if form.validate_on_submit() or request.args.get('name'):
+                if request.args.get('name') is not None:
+                    db = request.args.get('name')
+                else:
+                    db = str(form.db.data)
+                group_list = etcd_conn.search('/{}/'.format(db), json_field=False)
+                headers = [_('Name'), _('Group Name')]
+                links = [{'name': _('Update'), 'type': 'danger', 'link': '/tables/update'}]
+                page = pagination(len(group_list), '&name=' + str(db))
+
+                return flask.render_template('list.html', main_header=_('Tables'),
+                                             list=get_calculated_page(group_list, page), pagination=page,
+                                             headers=headers,
+                                             links=links, button_list=button_list)
+            return flask.render_template('list.html', main_header=_('Tables'), form=form, button_list=button_list)
+    except FileNotFoundError:
+        flash(_('pg_ddm config file not found'), 'error')
+    except KeyError:
+        flash(_('pg_ddm_config_file_path key not found in settings.cfg'), 'warning')
+
+    return flask.render_template('list.html', main_header=_('Tables'))
 
 
 @app.route('/rules', methods=['GET', 'POST'])
@@ -245,14 +419,15 @@ def rules(url_type=None):
                     prop = prop[:-1] + ']'
             else:
                 prop = '[]'
-            row = { "name": form.name.data, "description": form.description.data,
-                          "table_column": form.table_column.data,
-                          "filter": form.filter.data , "enabled": status,
-                          "group_name": form.group_name.data,
-                          "prop": prop,
-                          "rule": form.rule.data }
+            row = {"name": form.name.data, "description": form.description.data,
+                   "table_column": form.table_column.data,
+                   "filter": form.filter.data, "enabled": status,
+                   "group_name": form.group_name.data,
+                   "prop": prop,
+                   "rule": form.rule.data}
 
-            etcd_conn.put('/rules/' + form.table_column.data.replace('.', '/') + '/' + form.group_name.data.replace('.', '/')+ '/' + form.name.data,
+            etcd_conn.put('/rules/' + form.table_column.data.replace('.', '/') + '/' + form.group_name.data.replace('.',
+                                                                                                                    '/') + '/' + form.name.data,
                           json.dumps(row))
             flash(_('Rule') + ' ' + _('Added'), 'info')
             return flask.redirect(flask.url_for('rules'))
@@ -285,11 +460,15 @@ def rules(url_type=None):
         flash(_('Rule') + ' ' + _('Deleted'), 'error')
 
     group_list = etcd_conn.search('/rules/')
-    headers = [_('Key'), _('Description'), _('Enabled'), _('Filter'), _('Table'), _('Group Name'),_('Name'), _('Properties'), _('Rule')]
+    page = pagination(len(group_list))
+    headers = [_('Key'), _('Description'), _('Enabled'), _('Filter'), _('Table'), _('Group Name'), _('Name'),
+               _('Properties'), _('Rule')]
     links = [{'name': _('Delete'), 'type': 'danger', 'link': '/rules/delete'},
-            {'name': _('Update'), 'type': 'info', 'link': '/rules/change'}]
+             {'name': _('Update'), 'type': 'info', 'link': '/rules/change'}]
 
-    return flask.render_template('list.html', main_header=_('Rules'), list=group_list, headers=headers,
+    return flask.render_template('list.html', main_header=_('Rules'),
+                                 list=get_calculated_page(group_list, page),
+                                 pagination=page, headers=headers,
                                  button_list=button_list, links=links)
 
 
@@ -325,10 +504,12 @@ def groups(url_type=None):
         etcd_conn.delete(flask.request.args.get('key'))
         flash(_('Group') + ' ' + _('Deleted'), 'error')
     group_list = etcd_conn.search('/groups/')
+    page = pagination(len(group_list))
     links = [{'name': _('Delete'), 'type': 'danger', 'link': '/groups/delete'},
              {'name': _('Update'), 'type': 'info', 'link': '/groups/change'}]
-    return flask.render_template('list.html', main_header=_('Groups'), list=group_list, headers=headers,
-                                 button_list=button_list, links=links)
+    return flask.render_template('list.html', main_header=_('Groups'),
+                                 list=get_calculated_page(group_list, page), pagination=page,
+                                 headers=headers, button_list=button_list, links=links)
 
 
 @app.route('/users', methods=['GET', 'POST'])
@@ -369,9 +550,10 @@ def users(url_type=None):
 
     links = [{'name': _('Delete'), 'type': 'danger', 'link': '/users/delete'},
              {'name': _('Update'), 'type': 'info', 'link': '/users/change'}]
-    return flask.render_template('list.html', main_header=_('Users'), list=group_list[(int(page.get('page')) - 1) * int(
-        page.get('row_in_page')):((int(page.get('page')) - 1) * int(
-        page.get('row_in_page'))) + int(page.get('row_in_page'))], headers=headers,
+    return flask.render_template('list.html', main_header=_('SQL Users'),
+                                 list=group_list[(int(page.get('page')) - 1) * int(
+                                     page.get('row_in_page')):((int(page.get('page')) - 1) * int(
+                                     page.get('row_in_page'))) + int(page.get('row_in_page'))], headers=headers,
                                  button_list=button_list, links=links, pagination=page)
 
 
@@ -408,11 +590,15 @@ def dbusers(url_type=None):
         etcd_conn.delete(flask.request.args.get('key'))
         flash(_('DB User') + ' ' + _('Deleted'), 'error')
     group_list = etcd_conn.search('/dbuser/')
+    page = pagination(len(group_list))
 
     links = [{'name': _('Delete'), 'type': 'danger', 'link': '/dbusers/delete'},
              {'name': _('Update'), 'type': 'info', 'link': '/dbusers/change'}]
-    return flask.render_template('list.html', main_header=_('Users'), list=group_list, headers=headers,
-                                 button_list=button_list, links=links)
+    return flask.render_template('list.html', main_header=_('DB Users'),
+                                 list=group_list[(int(page.get('page')) - 1) * int(
+                                     page.get('row_in_page')):((int(page.get('page')) - 1) * int(
+                                     page.get('row_in_page'))) + int(page.get('row_in_page'))], headers=headers,
+                                 button_list=button_list, links=links, pagination=page)
 
 
 @app.route('/autocomplete', methods=['GET'])
@@ -444,11 +630,20 @@ def autocomplete(url_type=None, key=None):
             for i in fields[0][0]:
                 if i.get('column_name').find(search_key) > -1:
                     autocomplete_list.append('.'.join(key.split('.')[:-1]) + '.' + i.get('column_name'))
-
+    elif url_type == 'autocomplete_role':
+        service_key = request.args.get("service")
+        if service_key is not None:
+            service = etcd_conn.get_list(service_key)
+            import requests
+            r = requests.post(service.get('role_service_url'), json={service.get('role_service_param'): key},
+                              auth=(service.get('username'), service.get('password')))
+            for row in r.json():
+                autocomplete_list.append({"value": row.get(service.get('role_service_key')),
+                                          "label": row.get(service.get('role_service_value'))})
     else:
         autocomplete_list = etcd_conn.search_keys(
             '/' + url_type.replace('autocomplete_', '') + '/' + key.replace('.', '/'))
-        # print(fields[0])
+
     return Response(json.dumps(autocomplete_list), mimetype='application/json')
 
 
@@ -476,56 +671,66 @@ def user(username=None):
     return flask.render_template('list.html', main_header=_('Admin User'), form=form)
 
 
-@app.route('/pgbouncer', methods=['GET', 'POST'])
+@app.route('/pg_ddm', methods=['GET', 'POST'])
 @login_required
-def pgbouncer():
+def pg_ddm():
     from wtforms import StringField
-    from wtforms import Label
+    form = None
+    try:
+        form_obj = []
 
-    form_obj = []
-
-    with open(config_filepath) as fp:
-        line = fp.readline()
-        cnt = 1
-        text = ''
-        write = 0
-        while line:
-            # print("Line {}: {}".format(cnt, line.strip()))
+        with open(config['general']['pg_ddm_config_file_path']) as fp:
             line = fp.readline()
-            if line.strip() == '[pgbouncer]':
-                write = 1
-            if write == 1:
-                if line[0:3] == ';;;':
-                    # setattr(forms.PgBouncerForm, "cc", Label("sdsa", line))
-                    # setattr(forms.PgBouncerForm, parsed[0].strip(),
-                    #         ReadOnlyField(parsed[0].strip(), default=parsed[1].strip(), description=text))
-                    # text += '<h3>' + line[3:] + '</h3>'
-                    pass
-                elif line[0:2] == ';;':
-                    text += line[2:]
-                elif line[0:1] == ';':
-                    parsed = line[1:].split('=')
-                    text += '(' + _('Closed in config file') + ')'
-                    # print(parsed)
-                    if len(parsed) > 1:
+            cnt = 1
+            text = ''
+            header = ''
+            write = 0
+            while line:
+                # print("Line {}: {}".format(cnt, line.strip()))
+                line = fp.readline()
+                if line.strip() == '[pgbouncer]':
+                    write = 1
+                if write == 1:
+                    if line[0:3] == ';;;':
+                        # setattr(forms.PgBouncerForm, "cc", Label("sdsa", line))
+                        # setattr(forms.PgBouncerForm, parsed[0].strip(),
+                        #         ReadOnlyField(parsed[0].strip(), default=parsed[1].strip(), description=text))
+                        header += '<h3>' + line[3:] + '</h3>'
+                        pass
+                    elif line[0:2] == ';;':
+                        text += line[2:]
+                    elif line[0:1] == ';':
+                        parsed = line[1:].split('=')
+                        text += '(' + _('Closed in config file') + ')'
+                        # print(parsed)
+                        if len(parsed) > 1:
+                            text += header
+                            form_obj.append(parsed[0].strip())
+                            setattr(forms.PgBouncerForm, parsed[0].strip(),
+                                    StringField(parsed[0].strip(), default=parsed[1].strip(), description=text))
+                        text = ''
+                        header = ''
+                    elif len(line.strip('\n')) > 0 and line.strip() != '[pgbouncer]':
+                        parsed = line.strip('\n').split("=")
                         form_obj.append(parsed[0].strip())
+                        text += header
                         setattr(forms.PgBouncerForm, parsed[0].strip(),
-                                StringField(parsed[0].strip(), default=parsed[1].strip(), description=text))
-                    text = ''
-                elif len(line.strip('\n')) > 0 and line.strip() != '[pgbouncer]':
-                    parsed = line.strip('\n').split("=")
-                    form_obj.append(parsed[0].strip())
-                    setattr(forms.PgBouncerForm, parsed[0].strip(),
-                            StringField(parsed[0].strip(), default=('='.join(parsed[1:])).strip(), description=text))
-                    text = ''
+                                StringField(parsed[0].strip(), default=('='.join(parsed[1:])).strip(),
+                                            description=text))
+                        text = ''
+                        header = ''
 
-            cnt += 1
-    form = forms.PgBouncerForm()
+                cnt += 1
+            form = forms.PgBouncerForm()
 
-    for i in form_obj:
-        delattr(forms.PgBouncerForm, i)
+            for i in form_obj:
+                delattr(forms.PgBouncerForm, i)
+    except FileNotFoundError:
+        flash(_('pg_ddm config file not found'), 'error')
+    except KeyError:
+        flash(_('pg_ddm_config_file_path key not found in settings.cfg'), 'warning')
 
-    return flask.render_template('list.html', main_header=_('PgBouncer Config'), form=form)
+    return flask.render_template('list.html', main_header=_('PgDdm Config'), form=form)
 
 
 @app.route('/sqlfilter', methods=['GET', 'POST'])
@@ -542,8 +747,9 @@ def sqlfilter(url_type=None):
                 enabled = 'true'
             if form.group_name.data == '':
                 form.group_name.data = '*'
-            row = { "filter": form.filter.data, "group_name": form.group_name.data, "enabled": enabled }
-            etcd_conn.put('/sqlfilter/' + form.table.data.replace('.', '/') + '/' + form.group_name.data.replace('.', '/'),
+            row = {"filter": form.filter.data, "group_name": form.group_name.data, "enabled": enabled}
+            etcd_conn.put(
+                '/sqlfilter/' + form.table.data.replace('.', '/') + '/' + form.group_name.data.replace('.', '/'),
                 json.dumps(row))
             flash(_('SQL Filter') + ' ' + _('Added'), 'info')
             return flask.redirect(flask.url_for('sqlfilter'))
@@ -554,7 +760,8 @@ def sqlfilter(url_type=None):
                 form.enabled.data = True
             form.filter.data = form_data.get('filter')
             form.group_name.data = form_data.get('group_name')
-            form.table.data = flask.request.args.get('key').replace('/sqlfilter/', '').replace('/', '.').replace('.'+form_data.get('group_name'), '')
+            form.table.data = flask.request.args.get('key').replace('/sqlfilter/', '').replace('/', '.').replace(
+                '.' + form_data.get('group_name'), '')
             form.group_name.render_kw = {'readonly': True}
             form.table.render_kw = {'readonly': True}
         return flask.render_template('list.html', main_header=_('SQL Filter'), form=form, button_list=button_list)

@@ -8,3 +8,4 @@ is-safe-url
 etcd3
 passlib
 psycopg2-binary
+requests

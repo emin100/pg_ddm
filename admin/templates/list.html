@@ -6,10 +6,17 @@
 <script type="text/javascript">
     $(function () {
         $('input[id^="autocomplete"]').keyup(function () {
-            var field = $(this)
+            let field = $(this);
+            let extra_url = '';
+            let extra = field[0].attributes.getNamedItem("extra");
+
+            if (extra) {
+                extra_url = '?service=' + $('#' + extra.value).val()
+            }
+
             // if (field.val().split('.').length > 1) {
             $.ajax({
-                url: "{{ url_for('autocomplete') }}/" + $(this)[0].id + "/" + field.val()
+                url: "{{ url_for('autocomplete') }}/" + $(this)[0].id + "/" + field.val() + extra_url
             }).done(function (data) {
                 field.autocomplete({
                     select: function (event, ui) {

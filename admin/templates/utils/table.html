@@ -38,16 +38,17 @@
     </table>
     {% if pagination %}
     {% set page_number =  pagination.get('page') | int %}
+    {% set extra =  pagination.get('extra') %}
     <nav aria-label="Page navigation example">
         <ul class="pagination justify-content-center">
             <li class="page-item {% if page_number == 1 %}disabled{% endif %}">
-                <a class="page-link" href="?page={{ page_number -1 }}" tabindex="-1">Previous</a>
+                <a class="page-link" href="?page={{ page_number -1 }}{{ pagination.get('extra') }}" tabindex="-1">Previous</a>
             </li>
             {% for number in range(pagination.get('start') | int, (pagination.get('end') | int) + 1) %}
-            <li class="page-item {% if number == page_number %}active{% endif %}"><a class="page-link" href="?page={{ number }}">{{ number }}</a></li>
+            <li class="page-item {% if number == page_number %}active{% endif %}"><a class="page-link" href="?page={{ number }}{{ pagination.get('extra') }}">{{ number }}</a></li>
             {% endfor %}
             <li class="page-item {% if page_number == pagination.get('total_page') | int %}disabled{% endif %}">
-                <a class="page-link" href="?page={{ page_number+1 }}">Next</a>
+                <a class="page-link" href="?page={{ page_number+1 }}{{ extra }}">Next</a>
             </li>
         </ul>
     </nav>

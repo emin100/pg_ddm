@@ -71,6 +71,21 @@
                         </a>
                     </li>
                     <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                        <span>{{ _('External Role') }}</span>
+                    </h6>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('external_services') }}">
+                            <span data-feather="file"></span>
+                            {{ _('Services') }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('role_to_group') }}">
+                            <span data-feather="file"></span>
+                            {{ _('Role to Group') }}
+                        </a>
+                    </li>
+                    <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
                         <span>{{ _('Users') }}</span>
                     </h6>
                     <li class="nav-item">
@@ -89,9 +104,9 @@
                         <span>{{ _('General Settings') }}</span>
                     </h6>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('pgbouncer') }}">
+                        <a class="nav-link" href="{{ url_for('pg_ddm') }}">
                             <span data-feather="server"></span>
-                            {{ _('PgBouncer') }}
+                            {{ _('PgDdm') }}
                         </a>
                     </li>
                     <li class="nav-item">
