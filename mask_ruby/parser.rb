@@ -340,6 +340,17 @@ class PgQueryOpt
 
           @remove_ref = 2 if item == 'ResTarget' && @remove_ref == 1
 
+          if item == 'ResTarget'
+            name = if @name.nil?
+                     get_string(@ref[-1]) unless @ref.nil?
+                   elsif @name.is_a?(String)
+                     @name
+                   end
+            unless items['ResTarget'].include?('name')
+              items['ResTarget']['name'] = name
+            end
+          end
+
 
           if item == 'fields' && @remove_ref == 3 && !@return_column_ref.nil?
             unless @return_column_ref.empty?
