@@ -331,8 +331,6 @@ class PgQueryOpt
             old_table_list = table_list
             table_list     = find_table_list(items[item])
             filters        = get_filters(table_list)
-          when 'whereClause'
-            masked = false
           when 'A_Expr'
             masked = false
           end
@@ -349,8 +347,9 @@ class PgQueryOpt
                    elsif @name.is_a?(String)
                      @name
                    end
+
             unless items['ResTarget'].include?('name')
-              items['ResTarget']['name'] = name unless name.nil?
+              items['ResTarget']['name'] = name unless name.nil? if @in_function == 0
             end
           end
 
