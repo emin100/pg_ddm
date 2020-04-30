@@ -24,6 +24,7 @@ class PgQueryOpt
   @in_function       = 0
   @name              = nil
   @mask              = true
+  @change_name       = nil
 
   def properties(sql, username, db, etcd_host, etcd_port, etcd_user, etcd_passwd, user_regex, tag_regex, default_scheme, tag_users)
 
@@ -41,6 +42,7 @@ class PgQueryOpt
     @in_function    = 0
     @name           = nil
     @mask           = true
+    @change_name    = nil
 
 
     tag_users = tag_users.delete(' ').split(',')
@@ -332,32 +334,36 @@ class PgQueryOpt
             table_list     = find_table_list(items[item])
             filters        = get_filters(table_list)
           when 'A_Expr'
-            masked = false
+            if items[item].is_a?(Hash)
+              if items[item].include?('name')
+                masked = false unless get_string(items[item]['name'][0]) == '||'
+              end
+            end
           end
+
+          # ap '-----'
+          # print items[item]
+          # ap '-----'
 
 
           parse(items[item], table_list, masked)
 
+          masked      = true if item == 'A_Expr'
+
           @remove_ref = 2 if item == 'ResTarget' && @remove_ref == 1
 
-
           if item == 'ResTarget'
-            name = if @name.nil?
-                     get_string(@ref[-1]) unless @ref.nil?
-                   elsif @name.is_a?(String)
-                     @name
-                   end
-
-            unless items['ResTarget'].include?('name')
-              items['ResTarget']['name'] = name unless name.nil? if masked == false
+            unless items[item].include?('name')
+              items[item]['name'] = @change_name unless @change_name.nil?
             end
+            @change_name = nil
           end
-
 
           if item == 'fields' && @remove_ref == 3 && !@return_column_ref.nil?
             unless @return_column_ref.empty?
               items.delete(item)
-              items[item] = [@return_column_ref['ResTarget']['val']]
+              items[item]  = [@return_column_ref['ResTarget']['val']]
+              @change_name = @return_column_ref['ResTarget']['name'] if @return_column_ref['ResTarget'].include?('name')
             end
             @return_column_ref = {}
           end
