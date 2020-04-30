@@ -349,7 +349,7 @@ class PgQueryOpt
                    end
 
             unless items['ResTarget'].include?('name')
-              items['ResTarget']['name'] = name unless name.nil? if @in_function == 0
+              items['ResTarget']['name'] = name unless name.nil? if masked == false
             end
           end
 
