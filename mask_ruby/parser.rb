@@ -72,7 +72,6 @@ class PgQueryOpt
       @query_parser.tree[i] = parse(parse_item)
       i                     += 1
     end
-
     @tag_sql + @query_parser.deparse
   rescue StandardError => e
     puts e
@@ -167,6 +166,7 @@ class PgQueryOpt
   def get_string(node)
     return node if node.is_a?(String)
     return node['String']['str'] unless node['String'].nil?
+    return nil unless node['A_Star'].nil?
 
     node.to_s
   end
@@ -289,7 +289,7 @@ class PgQueryOpt
 
   # @param [Object] items
   # @param [Array] table_list
-  def parse(items, table_list = [])
+  def parse(items, table_list = [], masked = true)
     old_table_list = []
     return if items.nil?
 
@@ -299,7 +299,7 @@ class PgQueryOpt
           case item
           when 'fields'
             @ref               = items[item]
-            @return_column_ref = mask(@ref, table_list) if @ref[-1]['A_Star'].nil? if @mask == true
+            @return_column_ref = mask(@ref, table_list) if @ref[-1]['A_Star'].nil? && masked == true
             @name              = nil
           when 'name'
             @name = items[item]
@@ -331,14 +331,17 @@ class PgQueryOpt
             old_table_list = table_list
             table_list     = find_table_list(items[item])
             filters        = get_filters(table_list)
-            @mask = true
           when 'whereClause'
-            @mask = false
+            masked = false
+          when 'A_Expr'
+            masked = false
           end
 
-          parse(items[item], table_list)
+
+          parse(items[item], table_list, masked)
 
           @remove_ref = 2 if item == 'ResTarget' && @remove_ref == 1
+
 
           if item == 'ResTarget'
             name = if @name.nil?
@@ -347,7 +350,7 @@ class PgQueryOpt
                      @name
                    end
             unless items['ResTarget'].include?('name')
-              items['ResTarget']['name'] = name
+              items['ResTarget']['name'] = name unless name.nil?
             end
           end
 
@@ -386,7 +389,7 @@ class PgQueryOpt
     if items.is_a?(Array)
       i = 0
       items.each do |item|
-        parse(item, table_list)
+        parse(item, table_list, masked)
 
         reparse = 0
         unless item.nil?
@@ -417,7 +420,7 @@ class PgQueryOpt
           @remove_ref = 0
 
         end
-        parse(items[i], table_list) if reparse == 1
+        parse(items[i], table_list, masked) if reparse == 1
         i += 1
       end
     end
