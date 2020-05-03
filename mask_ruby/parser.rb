@@ -25,6 +25,7 @@ class PgQueryOpt
   @name              = nil
   @mask              = true
   @change_name       = nil
+  @mode              = 'select'
 
   def properties(sql, username, db, etcd_host, etcd_port, etcd_user, etcd_passwd, user_regex, tag_regex, default_scheme, tag_users)
 
@@ -43,6 +44,7 @@ class PgQueryOpt
     @name           = nil
     @mask           = true
     @change_name    = nil
+    @mode           = 'select'
 
 
     tag_users = tag_users.delete(' ').split(',')
@@ -301,13 +303,16 @@ class PgQueryOpt
           case item
           when 'fields'
             @ref               = items[item]
-            @return_column_ref = mask(@ref, table_list) if @ref[-1]['A_Star'].nil? && masked == true
+            @return_column_ref = mask(@ref, table_list) if @ref[-1]['A_Star'].nil? && masked == true && @mode == 'select'
             @name              = nil
+          when 'ResTarget'
+            if @mode == 'update' && masked == true
+              masked_field = mask([items[item]['name']], table_list)
+              items[item] = { "name" => masked_field[item]['name'], "val" => { "CaseExpr" => { "args" => [{ "CaseWhen" => { "expr" => { "A_Expr" => { "kind" => 0, "name" => [{ "String" => { "str" => "=" } }], "lexpr" => masked_field[item]['val'], "rexpr" => items[item]['val'] } }, "result" => { "ColumnRef" => { "fields" => [items[item]['name']] } } } }], "defresult" => items[item]['val'] } } } unless masked_field.empty?
+            end
           when 'name'
             @name = items[item]
-          when 'ColumnRef'
-            @remove_ref = 3
-          when 'args'
+          when 'ColumnRef', 'args'
             @remove_ref = 3
           when 'funcname'
             @in_function = 1 if get_string(items[item][0]) == 'count'
@@ -329,10 +334,17 @@ class PgQueryOpt
             else
               @in_function = 0
             end
-          when 'SelectStmt'
+          when 'SelectStmt', 'UpdateStmt'
+            @mode          = if item == 'UpdateStmt'
+                               'update'
+                             else
+                               'select'
+                             end
             old_table_list = table_list
             table_list     = find_table_list(items[item])
             filters        = get_filters(table_list)
+          when 'InsertStmt'
+            return items
           when 'A_Expr'
             if items[item].is_a?(Hash)
               if items[item].include?('name')
@@ -341,14 +353,11 @@ class PgQueryOpt
             end
           end
 
-          # ap '-----'
-          # print items[item]
-          # ap '-----'
-
 
           parse(items[item], table_list, masked)
 
           masked      = true if item == 'A_Expr'
+          @name       = nil if item == 'name'
 
           @remove_ref = 2 if item == 'ResTarget' && @remove_ref == 1
 
@@ -386,7 +395,8 @@ class PgQueryOpt
             end
           end
 
-          table_list = old_table_list if item == 'SelectStmt'
+          table_list = old_table_list if %w[SelectStmt UpdateStmt].include?(item)
+
         end
       end
     end
@@ -434,7 +444,7 @@ class PgQueryOpt
   end
 
   def find_table_list(tree, table_list = {})
-    key_list = %w[SelectStmt fromClause JoinExpr larg rarg]
+    key_list = %w[SelectStmt UpdateStmt relation fromClause JoinExpr larg rarg]
     if tree.is_a?(Array)
       tree.each do |k|
         find_table_list(k, table_list)
