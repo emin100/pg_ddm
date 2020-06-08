@@ -1,5 +1,5 @@
 
-function test(val,val_list,prefix) {
+function change_form(val,val_list,prefix) {
     $('label[for^="'+prefix+'"]').hide();
     $('input[id^='+prefix+']').hide();
     $.each( val_list[val], function( key, value ) {

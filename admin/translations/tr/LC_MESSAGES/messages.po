@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2020-04-29 00:37+0300\n"
+"POT-Creation-Date: 2020-06-04 23:50+0300\n"
 "PO-Revision-Date: 2019-02-20 13:51+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: tr\n"
@@ -18,169 +18,213 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.8.0\n"
 
-#: app.py:109
+#: app.py:92 templates/utils/buttons.html:25
+msgid "Search"
+msgstr "Ara"
+
+#: app.py:146
 msgid "Bye Bye"
 msgstr "Güle Güle"
 
-#: app.py:144
+#: app.py:162
+msgid "Acsess Denied."
+msgstr "Erişim Engellendi."
+
+#: app.py:185
 msgid "Logged in successfully."
 msgstr "Başarıyla Giriş Yaptınız."
 
-#: app.py:153
+#: app.py:194
 msgid "Login Failed!"
 msgstr "Giriş Başarısız!"
 
-#: app.py:184 app.py:243 app.py:332 app.py:374 app.py:417 app.py:461 app.py:631
-msgid "Update"
-msgstr "Düzenle"
-
-#: app.py:184 app.py:264 app.py:346 app.py:386 app.py:431 app.py:597
-msgid "List"
-msgstr "Liste"
-
-#: app.py:222
-msgid "DB Error"
-msgstr "Veritabanı Hatası"
-
-#: app.py:224
-msgid "General Error"
-msgstr "Genel Hata"
-
-#: app.py:229 app.py:246 app.py:250 app.py:256 templates/main_template.html:58
-msgid "Tables"
-msgstr "Tablolar"
-
-#: app.py:229 app.py:520
-msgid "Updated"
-msgstr "Güncellendi"
-
-#: app.py:231
-msgid "Database connection"
-msgstr "Veritabanı Bağlantısı"
-
-#: app.py:233
-msgid "Database select"
-msgstr "Veritabanı Seçimi"
-
-#: app.py:242 app.py:329 app.py:345 app.py:385 app.py:430 forms.py:28
-#: forms.py:68
+#: app.py:203 forms.py:28 forms.py:68 forms.py:134
 msgid "Name"
 msgstr "Ad"
 
-#: app.py:242 app.py:329 app.py:629 forms.py:31 forms.py:75 forms.py:82
-#: forms.py:83 forms.py:84 forms.py:126
+#: app.py:203 app.py:261 app.py:458 app.py:540 app.py:581 app.py:632 app.py:675
+#: app.py:857 forms.py:37 forms.py:70 forms.py:80 forms.py:86 forms.py:118
+#: forms.py:128 forms.py:147 forms.py:160
+msgid "Enabled"
+msgstr "Aktif"
+
+#: app.py:204 app.py:260 app.py:456 app.py:541 app.py:582 app.py:633 app.py:676
+#: app.py:856
+msgid "New"
+msgstr "Yeni"
+
+#: app.py:205 app.py:260 app.py:370 app.py:456 app.py:541 app.py:582 app.py:633
+#: app.py:676 app.py:856
+msgid "List"
+msgstr "Liste"
+
+#: app.py:221 app.py:244
+msgid "Service"
+msgstr "Servis"
+
+#: app.py:221 app.py:279 app.py:491 app.py:552 app.py:600 app.py:643 app.py:686
+#: app.py:870
+msgid "Added"
+msgstr "Eklendi"
+
+#: app.py:221 app.py:279 app.py:415 app.py:491 app.py:552 app.py:600 app.py:643
+#: app.py:686 app.py:775
+msgid "Updated"
+msgstr "Güncellendi"
+
+#: app.py:240
+msgid "Register Services"
+msgstr "Servis Kaydı"
+
+#: app.py:244 app.py:302 app.py:521 app.py:565 app.py:615 app.py:658 app.py:701
+#: app.py:886
+msgid "Deleted"
+msgstr "Silindi"
+
+#: app.py:248 app.py:331 app.py:526 app.py:569 app.py:620 app.py:663 app.py:706
+#: app.py:891 templates/list.html:80
+msgid "Delete"
+msgstr "Sil"
+
+#: app.py:249 app.py:332 app.py:527 app.py:570 app.py:621 app.py:664 app.py:707
+#: app.py:892
+msgid "Update"
+msgstr "Düzenle"
+
+#: app.py:250 app.py:261 forms.py:152 templates/main_template.html:84
+msgid "Services"
+msgstr "Servisler"
+
+#: app.py:261 app.py:457 app.py:857 forms.py:31 forms.py:76 forms.py:125
+#: forms.py:156 forms.py:159
 msgid "Group Name"
 msgstr "Grup Adı"
 
-#: app.py:252 app.py:585
+#: app.py:264 forms.py:105
+msgid "Select"
+msgstr "Seçiniz"
+
+#: app.py:279 app.py:293 app.py:302 app.py:327 app.py:334
+#: templates/main_template.html:91
+msgid "Role to Group"
+msgstr "Rolden Grup Tanımlama"
+
+#: app.py:327
+msgid "Refreshed"
+msgstr "Yenilendi"
+
+#: app.py:333 app.py:370
+msgid "Refresh"
+msgstr "Yenile"
+
+#: app.py:408
+msgid "DB Error"
+msgstr "Veritabanı Hatası"
+
+#: app.py:410
+msgid "General Error"
+msgstr "Genel Hata"
+
+#: app.py:415 app.py:437 app.py:441 app.py:448 templates/main_template.html:62
+msgid "Database Metadata"
+msgstr "Veritabanı Meta Verileri"
+
+#: app.py:417
+msgid "Database connection"
+msgstr "Veritabanı Bağlantısı"
+
+#: app.py:419
+msgid "Database select"
+msgstr "Veritabanı Seçimi"
+
+#: app.py:428
+msgid "Columns"
+msgstr "Kolonlar"
+
+#: app.py:444 app.py:844
 msgid "pg_ddm config file not found"
 msgstr "pg_ddm konfigürasyon dosyası bulunamadı."
 
-#: app.py:254 app.py:587
+#: app.py:446 app.py:846
 msgid "pg_ddm_config_file_path key not found in settings.cfg"
 msgstr ""
 "pg_ddm_config_file_path parametresş settings.cfg dosyasının içerisinde "
 "bulunamadı."
 
-#: app.py:264 app.py:346 app.py:386 app.py:431 app.py:597
-msgid "New"
-msgstr "Yeni"
-
-#: app.py:297 app.py:325 app.py:330 forms.py:38
-msgid "Rule"
-msgstr "Kural"
-
-#: app.py:297 app.py:357 app.py:396 app.py:441 app.py:610
-msgid "Added"
-msgstr "Eklendi"
-
-#: app.py:321 app.py:334 templates/main_template.html:64
-msgid "Rules"
-msgstr "Kurallar"
-
-#: app.py:325 app.py:370 app.py:411 app.py:456 app.py:626
-msgid "Deleted"
-msgstr "Silindi"
-
-#: app.py:329
-msgid "Key"
-msgstr "Anahtar"
-
-#: app.py:329 app.py:345 forms.py:30 forms.py:70
+#: app.py:457 app.py:540 forms.py:30 forms.py:71
 msgid "Description"
 msgstr "Tanım"
 
-#: app.py:329 app.py:345 app.py:385 app.py:430 app.py:629 forms.py:37
-#: forms.py:69 forms.py:77 forms.py:85 forms.py:90 forms.py:119 forms.py:128
-msgid "Enabled"
-msgstr "Aktif"
-
-#: app.py:329 forms.py:33
-msgid "Filter"
-msgstr "Filitre"
-
-#: app.py:329 app.py:629 forms.py:124
+#: app.py:457 forms.py:123
 msgid "Table"
 msgstr "Tablo"
 
-#: app.py:330
-msgid "Properties"
-msgstr "Ayarlar"
+#: app.py:491 app.py:521 forms.py:38
+msgid "Rule"
+msgstr "Kural"
 
-#: app.py:331 app.py:373 app.py:416 app.py:460 app.py:630
-msgid "Delete"
-msgstr "Sil"
+#: app.py:517 app.py:529 templates/main_template.html:68
+msgid "Rules"
+msgstr "Kurallar"
 
-#: app.py:357 app.py:370
+#: app.py:552 app.py:565
 msgid "Group"
 msgstr "Grup"
 
-#: app.py:367 app.py:375 templates/main_template.html:52
+#: app.py:562 app.py:571 templates/main_template.html:56
 msgid "Groups"
 msgstr "Gruplar"
 
-#: app.py:396 app.py:411
-msgid "SQL User"
-msgstr "SQL Kullanıcısı"
-
-#: app.py:408 app.py:453 templates/main_template.html:74
-msgid "Users"
-msgstr "Kullanıcılar"
-
-#: app.py:418 templates/main_template.html:85
-msgid "SQL Users"
-msgstr "SQL Kullanıcıları"
-
-#: app.py:441 app.py:456
-msgid "DB User"
-msgstr "DB Kullanıcısı"
-
-#: app.py:462 templates/main_template.html:79
-msgid "DB Users"
-msgstr "DB Kullanıcıları"
-
-#: app.py:520 app.py:527 templates/main_template.html:100
-msgid "Admin User"
-msgstr "Yetkili Kullanıcı"
-
-#: app.py:560
-msgid "Closed in config file"
-msgstr "Konfigürasyon dosyasında kapatılmış."
-
-#: app.py:589
-msgid "PgDdm Config"
-msgstr "PgDdm Konfigürasyon"
-
-#: app.py:610 app.py:623 app.py:626 app.py:629 app.py:633 forms.py:34
-#: forms.py:127 templates/main_template.html:70
-msgid "SQL Filter"
-msgstr "SQL Filitreleri"
-
-#: forms.py:13 forms.py:14
+#: app.py:581 forms.py:13 forms.py:14 forms.py:85
 msgid "Username"
 msgstr "Kullanıcı Adı"
 
-#: forms.py:15 forms.py:16 forms.py:93
+#: app.py:581 forms.py:91
+msgid "Role"
+msgstr "Rol"
+
+#: app.py:600
+msgid "System User"
+msgstr "Sistem Kullanıcıları"
+
+#: app.py:612 app.py:655 app.py:698
+msgid "Users"
+msgstr "Kullanıcılar"
+
+#: app.py:615 app.py:643 app.py:658
+msgid "SQL User"
+msgstr "SQL Kullanıcısı"
+
+#: app.py:622 app.py:665 templates/main_template.html:106
+msgid "SQL Users"
+msgstr "SQL Kullanıcıları"
+
+#: app.py:686 app.py:701
+msgid "DB User"
+msgstr "Veritabanı Kullanıcısı"
+
+#: app.py:708 templates/main_template.html:100
+msgid "DB Users"
+msgstr "Veritabanı Kullanıcıları"
+
+#: app.py:775 app.py:786
+msgid "Admin User"
+msgstr "Yetkili Kullanıcı"
+
+#: app.py:819
+msgid "Closed in config file"
+msgstr "Konfigürasyon dosyasında kapatılmış."
+
+#: app.py:848
+msgid "PgDdm Config"
+msgstr "PgDdm Konfigürasyon"
+
+#: app.py:857 app.py:870 app.py:883 app.py:886 app.py:894 forms.py:34
+#: forms.py:127 templates/main_template.html:74
+msgid "SQL Filter"
+msgstr "SQL Filtreleri"
+
+#: forms.py:15 forms.py:16 forms.py:89 forms.py:111 forms.py:146
 msgid "Password"
 msgstr "Şifre"
 
@@ -192,17 +236,27 @@ msgstr "Beni Hatırla"
 msgid "Sign in"
 msgstr "Giriş"
 
-#: forms.py:29
+#: forms.py:29 forms.py:69 forms.py:135
 msgid "Don't use any blank or special character. This field use like a id"
 msgstr ""
+"Lütfen özel karekter veya boşluk kullanmayınız. Bu alan tanımlayıcı "
+"olarak kullanılmaktadır."
 
-#: forms.py:32 forms.py:36
-msgid "Please search like this(DB.SCHEMA.TABLE.COLUMN)"
-msgstr "Lütfen örnekteki gibi arayınız(DATABASE.ŞEMA.TABLO.KOLON)"
+#: forms.py:32 forms.py:77 forms.py:126 forms.py:157
+msgid "Search with group name"
+msgstr "Grup ismini aratınız"
+
+#: forms.py:33
+msgid "Filter"
+msgstr "Filtre"
 
 #: forms.py:35
 msgid "Table Column"
 msgstr "Tablo Kolonu"
+
+#: forms.py:36
+msgid "Search like this(DB.SCHEMA.TABLE.COLUMN)"
+msgstr "Örnekteki gibi aratınız.(Veritabanı.Şema.Tablo.Kolon)"
 
 #: forms.py:39
 msgid "Send Null"
@@ -226,11 +280,11 @@ msgstr "Rastgele Tarih"
 
 #: forms.py:42
 msgid "Random Date Between"
-msgstr ""
+msgstr "Tarih aralığı İçinden Rastgele Tarih"
 
 #: forms.py:43
 msgid "Random Int Between"
-msgstr ""
+msgstr "Rakam aralığı İçinden Rastgele Rakam"
 
 #: forms.py:44
 msgid "Random Phone"
@@ -242,76 +296,140 @@ msgstr "Rastgele Karakter"
 
 #: forms.py:46
 msgid "Random Zip"
-msgstr "Rastgele Zip"
+msgstr "Rastgele Posta Kodu"
 
 #: forms.py:48
 msgid "Start Date"
-msgstr ""
+msgstr "Başlangıç Tarihi"
 
 #: forms.py:51
 msgid "End Date"
-msgstr ""
+msgstr "Bitiş Tarihi"
 
 #: forms.py:54
 msgid "Start"
-msgstr ""
+msgstr "Başlangıç"
 
 #: forms.py:55
 msgid "End"
-msgstr ""
+msgstr "Bitiş"
 
 #: forms.py:56 forms.py:57
 msgid "Prefix"
-msgstr ""
+msgstr "Baştan"
 
 #: forms.py:59
 msgid "Suffix"
-msgstr ""
+msgstr "Sondan"
 
 #: forms.py:61
 msgid "Padding"
-msgstr ""
+msgstr "Doldurulacak Karakter"
 
 #: forms.py:62
 msgid "Length"
 msgstr "Uzunluk"
 
-#: forms.py:64 forms.py:71 forms.py:78 forms.py:86 forms.py:96 forms.py:105
-#: forms.py:114 forms.py:120 forms.py:130
+#: forms.py:64 forms.py:72 forms.py:81 forms.py:96 forms.py:113 forms.py:119
+#: forms.py:130 forms.py:148 forms.py:161
 msgid "Submit"
 msgstr "Kaydet"
 
-#: forms.py:76
+#: forms.py:78
 msgid "User ID"
 msgstr "Kullanıcı ID"
 
-#: forms.py:91
-msgid "Language"
+#: forms.py:79
+msgid "For DB users, database username, for SQL users "
 msgstr ""
 
-#: forms.py:94
+#: forms.py:87
+msgid "Language"
+msgstr "Dil"
+
+#: forms.py:90
 msgid "E-mail"
-msgstr ""
+msgstr "E-posta"
+
+#: forms.py:92
+msgid "Editor"
+msgstr "Editör"
+
+#: forms.py:92
+msgid "Admin"
+msgstr "Yönetici"
+
+#: forms.py:93
+msgid "Viewer"
+msgstr "İzleyici"
 
 #: forms.py:104
 msgid "Database"
-msgstr ""
+msgstr "Veritabanı"
 
-#: forms.py:111
+#: forms.py:110 forms.py:145
 msgid "User"
-msgstr ""
+msgstr "Kullanıcı"
 
-#: forms.py:118
+#: forms.py:117
 msgid "Tag"
+msgstr "Etiket"
+
+#: forms.py:124
+msgid "Search like this(DB.SCHEMA.TABLE)"
+msgstr "Örnekteki gibi aratınız(Veritabanı.Şema.Tablo)"
+
+#: forms.py:136
+msgid "Role Service Url"
+msgstr "Rol Listesinin Alınacağı Liste"
+
+#: forms.py:137 forms.py:142
+msgid "Text"
+msgstr "Metin"
+
+#: forms.py:138
+msgid "Role Service Search Parameter"
 msgstr ""
 
-#: forms.py:125
-msgid "Please search like this(DB.SCHEMA.TABLE)"
+#: forms.py:139
+msgid "Role Service Key"
 msgstr ""
 
-#: templates/dashboard.html:3 templates/main_template.html:46
+#: forms.py:140
+msgid "Rol Service Value"
+msgstr ""
+
+#: forms.py:141
+msgid "User Service URL"
+msgstr ""
+
+#: forms.py:143
+msgid "User Service Search Parameter"
+msgstr ""
+
+#: forms.py:144
+msgid "User Service Key"
+msgstr ""
+
+#: forms.py:154
+msgid "Role Name"
+msgstr ""
+
+#: templates/dashboard.html:3
 msgid "Dashboard"
 msgstr "Kontrol Paneli"
+
+#: templates/list.html:84
+msgid "Do you want to delete this key?"
+msgstr "Bu anahtarı silmek istediğinize emin misiniz?"
+
+#: templates/list.html:88
+msgid "No"
+msgstr "Hayır"
+
+#: templates/list.html:89
+msgid "Yes"
+msgstr "Evet"
 
 #: templates/login.html:11
 msgid "Please sign in"
@@ -319,24 +437,84 @@ msgstr "Lütfen Giriş Yapınız"
 
 #: templates/main_template.html:21
 #, python-format
-msgid "Hello %(user)s!"
-msgstr ""
+msgid "Hello %(user)s"
+msgstr "Merhaba %(user)s"
 
 #: templates/main_template.html:30
 msgid "Sign out"
 msgstr "Çıkış"
 
-#: templates/main_template.html:89
-msgid "General Settings"
-msgstr ""
+#: templates/main_template.html:46
+msgid "Home"
+msgstr "Anasayfa"
 
-#: templates/main_template.html:94
-msgid "PgDdm"
-msgstr ""
+#: templates/main_template.html:51
+msgid "Masking/Filter"
+msgstr "Maskeleme/filtre"
 
-#: templates/utils/table.html:11
+#: templates/main_template.html:51 templates/main_template.html:110
 msgid "Settings"
-msgstr "İşlemler"
+msgstr "Ayarlar"
+
+#: templates/main_template.html:78
+msgid "External Role"
+msgstr "Dış Roller"
+
+#: templates/main_template.html:95
+msgid "Users for Masking"
+msgstr "Maskelenecek Kullanıcılar"
+
+#: templates/main_template.html:110
+msgid "General"
+msgstr "Genel"
+
+#: templates/main_template.html:115
+msgid "User Info"
+msgstr "Kullanıcı Bilgisi"
+
+#: templates/main_template.html:122
+msgid "pg_ddm"
+msgstr ""
+
+#: templates/main_template.html:122
+msgid "Configuration"
+msgstr "Konfigürasyon"
+
+#: templates/main_template.html:130
+msgid "System Users"
+msgstr "Sistem Kullanıcıları"
+
+#: templates/utils/buttons.html:16 templates/utils/buttons.html:17
+msgid "Keyword"
+msgstr "Anahtar Kelime"
+
+#: templates/utils/buttons.html:20
+msgid "Both"
+msgstr "Hepsi"
+
+#: templates/utils/buttons.html:21 templates/utils/table.html:7
+msgid "Key"
+msgstr "Anahtar"
+
+#: templates/utils/buttons.html:22
+msgid "Value"
+msgstr "Değer"
+
+#: templates/utils/table.html:64
+msgid "First"
+msgstr "İlk"
+
+#: templates/utils/table.html:68
+msgid "Previous"
+msgstr "Önceki"
+
+#: templates/utils/table.html:76
+msgid "Next"
+msgstr "Sonraki"
+
+#: templates/utils/table.html:79
+msgid "Last"
+msgstr "Son"
 
 #~ msgid "Remember me"
 #~ msgstr "Beni Hatırla"
@@ -360,7 +538,7 @@ msgstr "İşlemler"
 #~ msgstr ""
 
 #~ msgid "Hello %(user)s!"
-#~ msgstr ""
+#~ msgstr "Merhaba %(user)s!"
 
 #~ msgid "Sign out"
 #~ msgstr "Çıkış"
@@ -551,5 +729,41 @@ msgstr "İşlemler"
 #~ msgstr ""
 
 #~ msgid "PgBouncer Config"
+#~ msgstr ""
+
+#~ msgid "Son ek"
+#~ msgstr ""
+
+#~ msgid "Tables"
+#~ msgstr "Tablolar"
+
+#~ msgid "Veritabanı Meta Verileri"
+#~ msgstr ""
+
+#~ msgid "Key(/Database/Schema/Table/)"
+#~ msgstr "Anahtar(/Veritabanı/Şema/Tablo/)"
+
+#~ msgid "Properties"
+#~ msgstr "Ayarlar"
+
+#~ msgid "Settings"
+#~ msgstr "İşlemler"
+
+#~ msgid "Please search with group name"
+#~ msgstr ""
+
+#~ msgid "Please search like this(DB.SCHEMA.TABLE.COLUMN)"
+#~ msgstr "Lütfen örnekteki gibi arayınız(DATABASE.ŞEMA.TABLO.KOLON)"
+
+#~ msgid "Please search like this(DB.SCHEMA.TABLE)"
+#~ msgstr ""
+
+#~ msgid "General Settings"
+#~ msgstr "Genel Ayarlar"
+
+#~ msgid "PgDdm"
+#~ msgstr ""
+
+#~ msgid " Settings"
 #~ msgstr ""
 

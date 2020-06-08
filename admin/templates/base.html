@@ -6,6 +6,7 @@
 
 
 {% block styles %}
+<link rel="icon" href="{{url_for('.static', filename='images/postgresql.ico')}}" type="image/x-icon">
 <link rel="stylesheet" href="{{url_for('.static', filename='css/bootstrap.min.css')}}">
 <link rel="stylesheet" href="{{url_for('.static', filename='css/jquery-ui.css')}}">
 <style>
@@ -28,11 +29,11 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{url_for('.static', filename='js/jquery-3.3.1.min.js')}}"
-        integrity="sha384-tsQFqpEReu7ZLhBV2VZlAu7zcOV+rXbYlF2cqB8txI/8aZajjp4Bqd+V6D5IgvKT"
+<script src="{{url_for('.static', filename='js/jquery.min.js')}}"
+        integrity="sha384-EtrsdC1GCE72M2BzY9H0dEi9tl3ECDLWemXnvhUa+KQpxrwkEvSpVrUqUnHAshoL"
         crossorigin="anonymous"></script>
 <script src="{{url_for('.static', filename='js/bootstrap.bundle.min.js')}}"
-        integrity="sha384-xrRywqdh3PHs8keKZN+8zzc5TX0GRTLCcmivcbNJWm2rs5C8PRhcEn3czEjhAO9o"
+        integrity="sha384-1CmrxMRARb6aLqgBO7yyAxTOQE2AKb9GfXnEo760AUcUmFx3ibVJJAzGytlQcNXd"
         crossorigin="anonymous"></script>
 <script src="{{url_for('.static', filename='js/feather.min.js')}}"></script>
 <script src="{{url_for('.static', filename='js/Chart.min.js')}}"></script>

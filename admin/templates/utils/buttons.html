@@ -1,7 +1,37 @@
 {% macro render_buttons(list) %}
 
-{% for row in list %}
-<a  href="{{ row.href }}" class="btn btn-sm btn-outline-secondary">{{ row.name }}</a>
-{% endfor %}
+
+<form class="btn-toolbar" role="toolbar">
+    {% for row in request.args %}
+    {% if row not in ['search_key','search_type', 'csrf_token', 'submit'] %}
+    <input type="hidden" name="{{ row }}" value="{{ request.args.get(row) }}">
+    {% endif %}
+    {% endfor %}
+    {% for row in request.form %}
+    {% if row not in ['search_key','search_type', 'csrf_token', 'submit'] %}
+    <input type="hidden" name="{{ row }}" value="{{ request.form.get(row) }}">
+    {% endif %}
+    {% endfor %}
+    <div class="input-group input-group-sm  mr-4" role="group">
+        <input type="text" id="search_key" name="search_key" class="form-control" placeholder="{{ _('Keyword') }}"
+               aria-label="{{ _('Keyword') }}"
+               value="{% if request.args.get('search_type') %}{{ request.args.get('search_key') }}{% endif %}">
+        <select class="custom-select input-group-append col-md-3" id="search_type" name="search_type">
+            <option {% if request.args.get('search_type') == '1' %}selected{% endif %} value="1">{{ _('Both') }}</option>
+            <option {% if request.args.get('search_type') == '2' %}selected{% endif %} value="2">{{ _('Key') }}</option>
+            <option {% if request.args.get('search_type') == '3' %}selected{% endif %} value="3">{{ _('Value') }}</option>
+        </select>
+        <div class="input-group-append">
+            <input class="btn btn-success" type="submit" value="{{ _('Search') }}" name="submit">
+        </div>
+    </div>
+    <div class="btn-group mr-2" role="group">
+        {% for row in list %}
+        {% if check_roles(row.href) %}
+        <a href="{{ row.href }}" class="btn btn-sm btn-outline-secondary" role="button">{{ row.name }}</a>
+        {% endif %}
+        {% endfor %}
+    </div>
+</form>
 
 {% endmacro %}

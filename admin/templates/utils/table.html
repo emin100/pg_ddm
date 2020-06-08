@@ -1,14 +1,15 @@
 {% macro render_table(list,headers=None,key_name=True,links=None,pagination=None) %}
 <div class="table-responsive">
     <table class="table table-striped table-sm">
-        {% if headers %}
+        {% if headers and list|length > 0 %}
         <thead>
         <tr>
+            <th>{{ _('Key') }}</th>
             {% for col in headers %}
-            <th>{{ col }}</th>
+            <th>{{ col.0 }}</th>
             {% endfor %}
             {% if links %}
-            <th>{{ _('Settings') }}</th>
+            <th ></th>
             {% endif %}
         </tr>
         </thead>
@@ -18,17 +19,34 @@
         <tr>
             <td>{{ row[1].key.decode("utf-8") }}</td>
             {% if row[0] is mapping %}
-            {% for col in row[0] %}
-            <td>{{ row[0].get(col) }}</td>
+
+            {% for col in headers %}
+            <td>{{ row[0].get(col.1) }}</td>
             {% endfor %}
+
+            <!--{% for col in row[0] %}-->
+            <!--<td>{{ row[0].get(col) }}</td>-->
+            <!--{% endfor %}-->
             {% else %}
             <td>{{ row[0] }}</td>
             {% endif %}
+
+
+
             {% if links %}
-            <td>
+            <td align="right">
                 {% for link in links %}
+                {% if check_roles(link.get('link')) %}
+                {% if link.get('type') == 'danger' %}
+                <button data-url="{{ link.get('link') }}?key={{row[1].key.decode('utf-8')}}" type="button"
+                        class="btn btn-outline-{{ link.get('type') }} btn-sm {{ link.get('type') }}button"
+                        data-toggle="modal" data-target="#deleteModal">{{ link.get('name') }}
+                </button>
+                {% else %}
                 <a href="{{ link.get('link') }}?key={{row[1].key.decode('utf-8')}}"
                    class="btn btn-outline-{{ link.get('type') }} btn-sm">{{ link.get('name') }}</a>
+                {% endif %}
+                {% endif %}
                 {% endfor %}
             </td>
             {% endif %}
@@ -37,21 +55,32 @@
         </tbody>
     </table>
     {% if pagination %}
-    {% set page_number =  pagination.get('page') | int %}
-    {% set extra =  pagination.get('extra') %}
-    <nav aria-label="Page navigation example">
-        <ul class="pagination justify-content-center">
+    {% set page_number = pagination.get('page') | int %}
+    {% set extra = pagination.get('extra') %}
+    {% if pagination.get('total_page') > 1 %}
+    <nav>
+        <ul class="pagination pagination-sm justify-content-center">
             <li class="page-item {% if page_number == 1 %}disabled{% endif %}">
-                <a class="page-link" href="?page={{ page_number -1 }}{{ pagination.get('extra') }}" tabindex="-1">Previous</a>
+                <a class="page-link" href="?page=1{{ pagination.get('extra') }}" tabindex="-2">{{ _('First') }}</a>
+            </li>
+            <li class="page-item {% if page_number == 1 %}disabled{% endif %}">
+                <a class="page-link" href="?page={{ page_number -1 }}{{ pagination.get('extra') }}" tabindex="-1">{{
+                    _('Previous') }}</a>
             </li>
             {% for number in range(pagination.get('start') | int, (pagination.get('end') | int) + 1) %}
-            <li class="page-item {% if number == page_number %}active{% endif %}"><a class="page-link" href="?page={{ number }}{{ pagination.get('extra') }}">{{ number }}</a></li>
+            <li class="page-item {% if number == page_number %}active{% endif %}"><a class="page-link"
+                                                                                     href="?page={{ number }}{{ pagination.get('extra') }}">{{
+                number }}</a></li>
             {% endfor %}
             <li class="page-item {% if page_number == pagination.get('total_page') | int %}disabled{% endif %}">
-                <a class="page-link" href="?page={{ page_number+1 }}{{ extra }}">Next</a>
+                <a class="page-link" href="?page={{ page_number+1 }}{{ extra }}">{{ _('Next') }}</a>
+            </li>
+            <li class="page-item {% if page_number == pagination.get('total_page') | int %}disabled{% endif %}">
+                <a class="page-link" href="?page={{ pagination.get('total_page') }}{{ extra }}">{{ _('Last') }}</a>
             </li>
         </ul>
     </nav>
+    {% endif %}
     {% endif %}
 </div>
 

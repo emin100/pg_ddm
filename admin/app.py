@@ -1,15 +1,17 @@
 import configparser
 import os
+import re
 from urllib.parse import urlparse, urljoin
 
 import flask
-import forms
 import psycopg2
-from etcd import Etcd
 from flask import Flask, render_template, redirect, url_for, session, flash, Response, json, request, g
 from flask_babel import Babel, _
 from flask_bootstrap import Bootstrap
 from flask_login import LoginManager, logout_user, login_required, login_user
+
+import forms
+from etcd import Etcd
 from models import User
 
 babel = Babel()
@@ -17,6 +19,19 @@ login_manager = LoginManager()
 config_filepath = os.path.dirname(os.path.abspath(__file__)) + '/conf/settings.cfg'
 config = configparser.RawConfigParser(allow_no_value=True)
 config.read(config_filepath)
+
+
+def check_roles(url):
+    url = (url.split('/'))[-1]
+    if url in ['login', 'logout', ''] or request.endpoint == 'static':
+        return True
+    logined_user = g.user
+    if url in ['change', 'delete'] and logined_user.role not in ['admin', 'editor']:
+        return False
+    elif url in ['system_users', 'pg_ddm', 'external_services'] and logined_user.role not in ['admin']:
+        return False
+    else:
+        return True
 
 
 def create_app():
@@ -32,6 +47,9 @@ def create_app():
     app_obj.config['WTF_I18N_ENABLED'] = True
     app_obj.config['WTF_CSRF_SECRET_KEY'] = 'a random string'
     app_obj.config['WTF_CSRF_ENABLED'] = True
+    app_obj.config['ETCD_SETTINGS'] = config['etcd']
+
+    app_obj.jinja_env.globals.update(check_roles=check_roles)
 
     login_manager.login_view = "login"
     login_manager.session_protection = "strong"
@@ -71,6 +89,8 @@ def pagination(total, extra=''):
 
     if request.args.get('page') is not None:
         page = int(request.args.get('page'))
+    if request.args.get('submit') is not None and request.args.get('submit') == _('Search'):
+        page = int(1)
     start = page - 5
     diff = 0
     if page < 6:
@@ -97,6 +117,23 @@ def get_calculated_page(data_list, page):
         page.get('row_in_page'))) + int(page.get('row_in_page'))]
 
 
+def is_safe_url(target):
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
+
+
+def remove_dependency(key):
+    etcd_conn = Etcd()
+    for record in etcd_conn.search('/', search_key=key):
+        record_key = record[1].key.decode('utf-8')
+        record_split = re.split(key, record_key)
+        if not record_split[1] or record_split[1][:1] == '/':
+            etcd_conn.delete(record_key)
+
+    pass
+
+
 @app.route('/')
 @login_required
 def index():
@@ -117,18 +154,22 @@ def logout():
 #     return redirect(url_for('login'))
 
 
+@app.after_request
+def after_request_func(response):
+    if check_roles(request.base_url):
+        return response
+    else:
+        flash(_('Acsess Denied.'), 'danger')
+        return redirect(url_for('index'))
+
+
 @login_manager.user_loader
 def load_user(user_id):
     loaded_user = User(user_id)
     g.user = loaded_user
+    # check_roles()
 
     return loaded_user
-
-
-def is_safe_url(target):
-    ref_url = urlparse(request.host_url)
-    test_url = urlparse(urljoin(request.host_url, target))
-    return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -159,7 +200,7 @@ def login():
 @login_required
 def external_services(url_type=None):
     etcd_conn = Etcd()
-    headers = [_('Name'), _('Description'), _('Enabled')]
+    headers = [(_('Name'), 'name'), (_('Enabled'), 'enabled')]
     button_list = [{'name': _('New'), 'href': '/external_services/change'},
                    {'name': _('List'), 'href': '/external_services'}]
     if url_type == 'change':
@@ -177,7 +218,7 @@ def external_services(url_type=None):
                    }
             etcd_conn.put('/services/' + form.name.data.lower().replace(' ', '_'),
                           json.dumps(row))
-            flash(_('Service') + ' ' + _('Added'), 'info')
+            flash(_('Service') + ' ' + _('Added') + ' / ' + _('Updated'), 'info')
             return flask.redirect(flask.url_for('external_services'))
         elif flask.request.args.get('key'):
             form_data = etcd_conn.get_list(flask.request.args.get('key'))
@@ -201,13 +242,14 @@ def external_services(url_type=None):
     elif url_type == 'delete':
         etcd_conn.delete(flask.request.args.get('key'))
         flash(_('Service') + ' ' + _('Deleted'), 'error')
+        return flask.redirect(flask.url_for('external_services'))
     group_list = etcd_conn.search('/services/')
     page = pagination(len(group_list))
     links = [{'name': _('Delete'), 'type': 'danger', 'link': '/external_services/delete'},
              {'name': _('Update'), 'type': 'info', 'link': '/external_services/change'}]
     return flask.render_template('list.html', main_header=_('Services'),
                                  list=get_calculated_page(group_list, page), pagination=page,
-                                 headers=headers, button_list=button_list, links=links)
+                                 button_list=button_list, links=links, headers=headers)
 
 
 @app.route('/role_to_group', methods=['GET', 'POST'])
@@ -216,6 +258,7 @@ def external_services(url_type=None):
 def role_to_group(url_type=None):
     etcd_conn = Etcd()
     button_list = [{'name': _('New'), 'href': '/role_to_group/change'}, {'name': _('List'), 'href': '/role_to_group'}]
+    header = [(_('Services'), 'service_key'), (_('Group Name'), 'group'), (_('Enabled'), 'enabled')]
     if url_type == 'change':
         form = forms.RoleForm()
         service_list = [(None, _('Select'))]
@@ -233,7 +276,7 @@ def role_to_group(url_type=None):
             except Exception as error:
                 print(error)
 
-            flash(_('Role to Group') + ' ' + _('Updated'), 'success')
+            flash(_('Role to Group') + ' ' + _('Added') + ' / ' + _('Updated'), 'success')
             return flask.redirect('/role_to_group/refresh?key={}'.format(key))
         elif flask.request.args.get('key'):
             parse_key = flask.request.args.get('key').split('/')
@@ -245,6 +288,7 @@ def role_to_group(url_type=None):
             form.group_name.data = parse_key[2] + '.' + parse_key[3]
             form.role.data = form_data.get('group')
             form.role_id.data = parse_key[4]
+            form.service.render_kw = {'readonly': True}
             form.group_name.render_kw = {'readonly': True}
             form.role.render_kw = {'readonly': True}
         return flask.render_template('role.html', main_header=_('Role to Group'), form=form, button_list=button_list)
@@ -257,6 +301,7 @@ def role_to_group(url_type=None):
                 etcd_conn.delete(x[1].key.decode("utf-8"))
         etcd_conn.delete(flask.request.args.get('key'))
         flash(_('Role to Group') + ' ' + _('Deleted'), 'error')
+        return flask.redirect('/role_to_group')
     elif url_type == 'refresh':
         key = flask.request.args.get('key')
         parse_key = key.split('/')
@@ -281,18 +326,21 @@ def role_to_group(url_type=None):
                 etcd_conn.put(key, json.dumps({"enabled": status}))
 
         flash(_('Role to Group') + ' ' + _('Refreshed'), 'success')
+        return flask.redirect('/role_to_group')
     group_list = etcd_conn.search('/role_to_group/')
+    page = pagination(len(group_list))
     links = [{'name': _('Delete'), 'type': 'danger', 'link': '/role_to_group/delete'},
              {'name': _('Update'), 'type': 'info', 'link': '/role_to_group/change'},
              {'name': _('Refresh'), 'type': 'success', 'link': '/role_to_group/refresh'}]
-    return flask.render_template('list.html', main_header=_('Role to Group'), button_list=button_list, list=group_list,
-                                 links=links)
+    return flask.render_template('list.html', main_header=_('Role to Group'), button_list=button_list,
+                                 list=get_calculated_page(group_list, page), headers=header,
+                                 links=links, pagination=page)
 
 
-@app.route('/tables', methods=['GET', 'POST'])
-@app.route('/tables/<url_type>', methods=['GET', 'POST'])
+@app.route('/dbmeta', methods=['GET', 'POST'])
+@app.route('/dbmeta/<url_type>', methods=['GET', 'POST'])
 @login_required
-def tables(url_type=None):
+def dbmeta(url_type=None):
     etcd_conn = Etcd()
     try:
         pg_ddm_config = configparser.RawConfigParser(allow_no_value=True)
@@ -308,15 +356,19 @@ def tables(url_type=None):
         for db in databases:
             db_list.append((db, db))
             key_list = {}
+            tmp_dsn = []
             for i in databases[db].split(" "):
                 key = i.split("=")
-                key_list[key[0]] = key[1]
+                if key[0] != 'search_path' and key[0] != 'route':
+                    tmp_dsn.append(key[0] + '=' + key[1])
+                    key_list[key[0]] = key[1]
             conn_info[db] = key_list
+            databases[db] = ' '.join(tmp_dsn)
 
         form = forms.TableSelectForm()
         form.db.choices = db_list
 
-        button_list = [{'name': _('Update'), 'href': '/tables/change'}, {'name': _('List'), 'href': '/tables'}]
+        button_list = [{'name': _('Refresh'), 'href': '/dbmeta/change'}, {'name': _('List'), 'href': '/dbmeta'}]
 
         # if url_type == 'update':
         #     print('update')
@@ -351,44 +403,50 @@ def tables(url_type=None):
 
                         for row in cur.fetchall():
                             key = '/{}/{}/{}'.format(str(form.db.data), str(row[1]), str(row[2]))
-                            # etcd_conn.put(key, json.dumps(row[3]))
+                            etcd_conn.put(key, json.dumps(row[3]))
                         cur.close()
-                    except (Exception, psycopg2.DatabaseError):
-                        flash(_('DB Error'), 'error')
-                    except (Exception, psycopg2.DatabaseError):
-                        flash(_('General Error'), 'error')
+                    except (Exception, psycopg2.DatabaseError) as e:
+                        flash(_('DB Error'), e)
+                    except (Exception, psycopg2.DatabaseError) as e:
+                        flash(_('General Error'), e)
                     finally:
                         if conn is not None:
                             conn.close()
 
-                    flash(_('Tables') + ' ' + _('Updated'), 'info')
-                    return flask.redirect(flask.url_for('tables'))
+                    flash(_('Database Metadata') + ' ' + _('Updated'), 'info')
+                    return flask.redirect(flask.url_for('dbmeta'))
                 return flask.render_template('list.html', main_header=_('Database connection'), form=form_cred,
                                              button_list=button_list)
             return flask.render_template('list.html', main_header=_('Database select'), form=form,
                                          button_list=button_list)
         else:
-            if form.validate_on_submit() or request.args.get('name'):
-                if request.args.get('name') is not None:
-                    db = request.args.get('name')
+            if form.validate_on_submit() or request.args.get('db'):
+                if request.args.get('db') is not None:
+                    db = request.args.get('db')
                 else:
                     db = str(form.db.data)
                 group_list = etcd_conn.search('/{}/'.format(db), json_field=False)
-                headers = [_('Name'), _('Group Name')]
-                links = [{'name': _('Update'), 'type': 'danger', 'link': '/tables/update'}]
-                page = pagination(len(group_list), '&name=' + str(db))
+                headers = [(_('Columns'), '')]
+                # links = [{'name': _('Update'), 'type': 'info', 'link': '/dbmeta/update'}]
+                links = []
+                extra_param = '&db=' + str(db)
+                if request.args.get('search_key') is not None and request.args.get('search_key'):
+                    extra_param += '&search_key=' + str(request.args.get('search_key')) + '&search_type=' + str(
+                        request.args.get('search_type'))
+                page = pagination(len(group_list), extra_param)
 
-                return flask.render_template('list.html', main_header=_('Tables'),
+                return flask.render_template('list.html', main_header=_('Database Metadata'),
                                              list=get_calculated_page(group_list, page), pagination=page,
                                              headers=headers,
                                              links=links, button_list=button_list)
-            return flask.render_template('list.html', main_header=_('Tables'), form=form, button_list=button_list)
+            return flask.render_template('list.html', main_header=_('Database Metadata'), form=form,
+                                         button_list=button_list)
     except FileNotFoundError:
         flash(_('pg_ddm config file not found'), 'error')
     except KeyError:
         flash(_('pg_ddm_config_file_path key not found in settings.cfg'), 'warning')
 
-    return flask.render_template('list.html', main_header=_('Tables'))
+    return flask.render_template('list.html', main_header=_('Database Metadata'))
 
 
 @app.route('/rules', methods=['GET', 'POST'])
@@ -397,6 +455,8 @@ def tables(url_type=None):
 def rules(url_type=None):
     etcd_conn = Etcd()
     button_list = [{'name': _('New'), 'href': '/rules/change'}, {'name': _('List'), 'href': '/rules'}]
+    headers = [(_('Description'), 'description'), (_('Group Name'), 'group_name'), (_('Table'), 'table_column'),
+               (_('Enabled'), 'enabled')]
     if url_type == 'change':
         form = forms.RulesForm()
         if form.validate_on_submit():
@@ -429,7 +489,7 @@ def rules(url_type=None):
             etcd_conn.put('/rules/' + form.table_column.data.replace('.', '/') + '/' + form.group_name.data.replace('.',
                                                                                                                     '/') + '/' + form.name.data,
                           json.dumps(row))
-            flash(_('Rule') + ' ' + _('Added'), 'info')
+            flash(_('Rule') + ' ' + _('Added') + ' / ' + _('Updated'), 'info')
             return flask.redirect(flask.url_for('rules'))
         elif flask.request.args.get('key'):
             form_data = etcd_conn.get_list(flask.request.args.get('key'))
@@ -453,16 +513,17 @@ def rules(url_type=None):
             form.table_column.data = form_data.get('table_column')
             form.name.data = form_data.get('name')
             form.name.render_kw = {'readonly': True}
+            form.table_column.render_kw = {'readonly': True}
+            form.group_name.render_kw = {'readonly': True}
         return flask.render_template('rules.html', main_header=_('Rules'), form=form, button_list=button_list)
 
     elif url_type == 'delete':
         etcd_conn.delete(flask.request.args.get('key'))
         flash(_('Rule') + ' ' + _('Deleted'), 'error')
+        return flask.redirect(flask.url_for('rules'))
 
     group_list = etcd_conn.search('/rules/')
     page = pagination(len(group_list))
-    headers = [_('Key'), _('Description'), _('Enabled'), _('Filter'), _('Table'), _('Group Name'), _('Name'),
-               _('Properties'), _('Rule')]
     links = [{'name': _('Delete'), 'type': 'danger', 'link': '/rules/delete'},
              {'name': _('Update'), 'type': 'info', 'link': '/rules/change'}]
 
@@ -477,7 +538,7 @@ def rules(url_type=None):
 @login_required
 def groups(url_type=None):
     etcd_conn = Etcd()
-    headers = [_('Name'), _('Description'), _('Enabled')]
+    headers = [(_('Description'), 'desc'), (_('Enabled'), 'enabled')]
     button_list = [{'name': _('New'), 'href': '/groups/change'}, {'name': _('List'), 'href': '/groups'}]
     if url_type == 'change':
         form = forms.GroupsForm()
@@ -489,7 +550,7 @@ def groups(url_type=None):
             row = {"enabled": status, "desc": form.desc.data}
             etcd_conn.put('/groups/' + form.name.data.replace(' ', '_'),
                           json.dumps(row))
-            flash(_('Group') + ' ' + _('Added'), 'info')
+            flash(_('Group') + ' ' + _('Added') + ' / ' + _('Updated'), 'info')
             return flask.redirect(flask.url_for('groups'))
         elif flask.request.args.get('key'):
             form_data = etcd_conn.get_list(flask.request.args.get('key'))
@@ -501,8 +562,9 @@ def groups(url_type=None):
             form.name.render_kw = {'readonly': True}
         return flask.render_template('list.html', main_header=_('Groups'), form=form, button_list=button_list)
     elif url_type == 'delete':
-        etcd_conn.delete(flask.request.args.get('key'))
+        remove_dependency(flask.request.args.get('key'))
         flash(_('Group') + ' ' + _('Deleted'), 'error')
+        # return flask.redirect(flask.url_for('groups'))
     group_list = etcd_conn.search('/groups/')
     page = pagination(len(group_list))
     links = [{'name': _('Delete'), 'type': 'danger', 'link': '/groups/delete'},
@@ -512,12 +574,63 @@ def groups(url_type=None):
                                  headers=headers, button_list=button_list, links=links)
 
 
+@app.route('/system_users', methods=['GET', 'POST'])
+@app.route('/system_users/<url_type>', methods=['GET', 'POST'])
+@login_required
+def system_users(url_type=None):
+    etcd_conn = Etcd()
+    headers = [(_('Username'), 'username'), (_('Role'), 'role'), (_('Enabled'), 'enabled')]
+    button_list = [{'name': _('New'), 'href': '/system_users/change'}, {'name': _('List'), 'href': '/system_users'}]
+    if url_type == 'change':
+        form = forms.UserForm()
+        if form.validate_on_submit():
+            status = False
+            if form.enabled.data is True:
+                status = True
+            row = {"enabled": status, "locale": form.locale.data, "email": form.email.data,
+                   "username": form.username.data, "role": form.role.data}
+            if flask.request.args.get('key'):
+                if form.password.data:
+                    row['password'] = g.user.hash_password(form.password.data)
+                else:
+                    form_data = etcd_conn.get_list(flask.request.args.get('key'))
+                    row['password'] = form_data.get('password')
+            else:
+                row['password'] = g.user.hash_password(form.password.data)
+            etcd_conn.put('/appuser/' + form.username.data, json.dumps(row))
+            flash(_('System User') + ' ' + _('Added') + ' / ' + _('Updated'), 'info')
+            return flask.redirect(flask.url_for('system_users'))
+        elif flask.request.args.get('key'):
+            form_data = etcd_conn.get_list(flask.request.args.get('key'))
+            form.enabled.data = False
+            if form_data.get('enabled') is True:
+                form.enabled.data = True
+            form.username.render_kw = {'readonly': True}
+            form.email.data = form_data.get('email')
+            form.locale.data = form_data.get('locale')
+            form.username.data = form_data.get('username')
+            form.role.data = form_data.get('role')
+        return flask.render_template('list.html', main_header=_('Users'), form=form, button_list=button_list)
+    elif url_type == 'delete':
+        etcd_conn.delete(flask.request.args.get('key'))
+        flash(_('SQL User') + ' ' + _('Deleted'), 'error')
+        return flask.redirect(flask.url_for('system_users'))
+    group_list = etcd_conn.search('/appuser/')
+    page = pagination(len(group_list))
+
+    links = [{'name': _('Delete'), 'type': 'danger', 'link': '/system_users/delete'},
+             {'name': _('Update'), 'type': 'info', 'link': '/system_users/change'}]
+    return flask.render_template('list.html', main_header=_('SQL Users'),
+                                 list=get_calculated_page(group_list, page), headers=headers,
+                                 button_list=button_list, links=links, pagination=page)
+
+
 @app.route('/users', methods=['GET', 'POST'])
 @app.route('/users/<url_type>', methods=['GET', 'POST'])
 @login_required
 def users(url_type=None):
     etcd_conn = Etcd()
-    headers = [_('Name'), _('Enabled')]
+    headers = [(_('Enabled'), 'enabled')]
     button_list = [{'name': _('New'), 'href': '/users/change'}, {'name': _('List'), 'href': '/users'}]
     if url_type == 'change':
         form = forms.DBorCommentUsersForm()
@@ -528,7 +641,7 @@ def users(url_type=None):
             row = {"enabled": status}
             etcd_conn.put('/users/' + form.user.data + '/' + form.group_name.data.replace('.', '/'),
                           json.dumps(row))
-            flash(_('SQL User') + ' ' + _('Added'), 'info')
+            flash(_('SQL User') + ' ' + _('Added') + ' / ' + _('Updated'), 'info')
             return flask.redirect(flask.url_for('users'))
         elif flask.request.args.get('key'):
             form_data = etcd_conn.get_list(flask.request.args.get('key'))
@@ -544,16 +657,14 @@ def users(url_type=None):
     elif url_type == 'delete':
         etcd_conn.delete(flask.request.args.get('key'))
         flash(_('SQL User') + ' ' + _('Deleted'), 'error')
+        return flask.redirect(flask.url_for('users'))
     group_list = etcd_conn.search('/users/')
     page = pagination(len(group_list))
-    print(page)
 
     links = [{'name': _('Delete'), 'type': 'danger', 'link': '/users/delete'},
              {'name': _('Update'), 'type': 'info', 'link': '/users/change'}]
     return flask.render_template('list.html', main_header=_('SQL Users'),
-                                 list=group_list[(int(page.get('page')) - 1) * int(
-                                     page.get('row_in_page')):((int(page.get('page')) - 1) * int(
-                                     page.get('row_in_page'))) + int(page.get('row_in_page'))], headers=headers,
+                                 list=get_calculated_page(group_list, page), headers=headers,
                                  button_list=button_list, links=links, pagination=page)
 
 
@@ -562,7 +673,7 @@ def users(url_type=None):
 @login_required
 def dbusers(url_type=None):
     etcd_conn = Etcd()
-    headers = [_('Name'), _('Enabled')]
+    headers = [(_('Enabled'), 'enabled')]
     button_list = [{'name': _('New'), 'href': '/dbusers/change'}, {'name': _('List'), 'href': '/dbusers'}]
     if url_type == 'change':
         form = forms.DBorCommentUsersForm()
@@ -573,7 +684,7 @@ def dbusers(url_type=None):
             row = {"enabled": status}
             etcd_conn.put('/dbuser/' + form.user.data + '/' + form.group_name.data.replace('.', '/'),
                           json.dumps(row))
-            flash(_('DB User') + ' ' + _('Added'), 'info')
+            flash(_('DB User') + ' ' + _('Added') + ' / ' + _('Updated'), 'info')
             return flask.redirect(flask.url_for('dbusers'))
         elif flask.request.args.get('key'):
             form_data = etcd_conn.get_list(flask.request.args.get('key'))
@@ -589,15 +700,14 @@ def dbusers(url_type=None):
     elif url_type == 'delete':
         etcd_conn.delete(flask.request.args.get('key'))
         flash(_('DB User') + ' ' + _('Deleted'), 'error')
+        return flask.redirect(flask.url_for('dbusers'))
     group_list = etcd_conn.search('/dbuser/')
     page = pagination(len(group_list))
 
     links = [{'name': _('Delete'), 'type': 'danger', 'link': '/dbusers/delete'},
              {'name': _('Update'), 'type': 'info', 'link': '/dbusers/change'}]
     return flask.render_template('list.html', main_header=_('DB Users'),
-                                 list=group_list[(int(page.get('page')) - 1) * int(
-                                     page.get('row_in_page')):((int(page.get('page')) - 1) * int(
-                                     page.get('row_in_page'))) + int(page.get('row_in_page'))], headers=headers,
+                                 list=get_calculated_page(group_list, page), headers=headers,
                                  button_list=button_list, links=links, pagination=page)
 
 
@@ -607,7 +717,7 @@ def dbusers(url_type=None):
 def autocomplete(url_type=None, key=None):
     etcd_conn = Etcd()
     autocomplete_list = []
-    if url_type == 'autocomplete_table':
+    if url_type == 'autocomplete_table' or url_type == 'autocomplete_table_without_columns':
 
         if key.count('.') == 0:
             fields = etcd_conn.search_keys('/' + key.replace('.', '/'))
@@ -623,8 +733,11 @@ def autocomplete(url_type=None, key=None):
             fields = etcd_conn.search_keys('/' + key.replace('.', '/'))
             for i in fields:
                 if '.'.join(i.split('.')[0:3]) + '.' not in autocomplete_list:
-                    autocomplete_list.append('.'.join(i.split('.')[0:3]) + '.')
-        elif key.count('.') == 3:
+                    dot = ''
+                    if url_type == 'autocomplete_table':
+                        dot = '.'
+                    autocomplete_list.append('.'.join(i.split('.')[0:3]) + dot)
+        elif key.count('.') == 3 and url_type == 'autocomplete_table':
             search_key = key.split('.')[-1]
             fields = etcd_conn.search('/' + '/'.join(key.split('.')[:-1]))
             for i in fields[0][0]:
@@ -648,27 +761,31 @@ def autocomplete(url_type=None, key=None):
 
 
 @app.route('/user', methods=['GET', 'POST'])
-@app.route('/user/<username>', methods=['GET', 'POST'])
 @login_required
-def user(username=None):
+def user():
     form = forms.UserForm()
 
     if form.validate_on_submit():
-        g.user.enabled = form.enabled.data
+        # g.user.enabled = form.enabled.data
         g.user.locale = form.locale.data
         g.user.email = form.email.data
         if form.password.data:
             g.user.password_hash = g.user.hash_password(form.password.data)
-            print(g.user.password_hash)
+            # print(g.user.password_hash)
         g.user.set()
-        flash(_('Admin User') + ' ' + _('Updated'), 'success')
+        flash(_('User Info') + ' ' + _('Updated'), 'success')
     else:
         form.enabled.data = g.user.enabled
         # form.username.data = g.user.username
         form.locale.data = g.user.locale
         form.email.data = g.user.email
         form.password.data = None
-    return flask.render_template('list.html', main_header=_('Admin User'), form=form)
+    form.username.data = g.user.username
+    form.role.data = g.user.role
+    form.username.render_kw = {'readonly': True}
+    form.role.render_kw = {'readonly': True}
+    form.enabled.render_kw = {'readonly': True}
+    return flask.render_template('list.html', main_header=_('User Info'), form=form)
 
 
 @app.route('/pg_ddm', methods=['GET', 'POST'])
@@ -739,6 +856,7 @@ def pg_ddm():
 def sqlfilter(url_type=None):
     etcd_conn = Etcd()
     button_list = [{'name': _('New'), 'href': '/sqlfilter/change'}, {'name': _('List'), 'href': '/sqlfilter'}]
+    headers = [(_('SQL Filter'), 'filter'), (_('Group Name'), 'group_name'), (_('Enabled'), 'enabled')]
     if url_type == 'change':
         form = forms.SQLFilterForm()
         if form.validate_on_submit():
@@ -768,14 +886,16 @@ def sqlfilter(url_type=None):
     elif url_type == 'delete':
         etcd_conn.delete(flask.request.args.get('key'))
         flash(_('SQL Filter') + ' ' + _('Deleted'), 'error')
+        return flask.redirect(flask.url_for('sqlfilter'))
 
     group_list = etcd_conn.search('/sqlfilter/')
-    headers = [_('Table'), _('Enabled'), _('SQL Filter'), _('Group Name')]
+    page = pagination(len(group_list))
     links = [{'name': _('Delete'), 'type': 'danger', 'link': '/sqlfilter/delete'},
              {'name': _('Update'), 'type': 'info', 'link': '/sqlfilter/change'}]
 
-    return flask.render_template('list.html', main_header=_('SQL Filter'), list=group_list, headers=headers,
-                                 button_list=button_list, links=links)
+    return flask.render_template('list.html', main_header=_('SQL Filter'), list=get_calculated_page(group_list, page),
+                                 headers=headers,
+                                 button_list=button_list, links=links, pagination=page)
 
 
-app.run(debug=True, host="0.0.0.0", port=25432)
+app.run(debug=config.get('general', 'debug'), host=config.get('general', 'host'), port=config.get('general', 'port'))

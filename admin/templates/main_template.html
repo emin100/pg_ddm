@@ -18,7 +18,7 @@
 <nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
     <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="#">pg_ddm</a>
     <!--<input class="form-control form-control-dark w-100" type="text" placeholder="Search" aria-label="Search">-->
-    <div class="user_menu w-100">{{ _('Hello %(user)s!',user=current_user.get_id()) }}</div>
+    <div class="user_menu w-100">{{ _('Hello %(user)s',user=current_user.get_id()) }}</div>
     <ul class="navbar-nav px-3">
         <!--<li class="nav-item">-->
         <!---->
@@ -41,11 +41,15 @@
             <div class="sidebar-sticky">
                 <ul class="nav flex-column">
                     <li class="nav-item">
-                        <a class="nav-link active" href="#">
+                        <a class="nav-link active" href="{{ url_for('index') }}">
                             <span data-feather="home"></span>
-                            {{ _('Dashboard') }} <span class="sr-only">(current)</span>
+                            {{ _('Home') }} <span class="sr-only">(current)</span>
                         </a>
                     </li>
+
+                    <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                        <span>{{ _('Masking/Filter') }} {{ _('Settings') }}</span>
+                    </h6>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('groups') }}">
                             <span data-feather="layers"></span>
@@ -53,40 +57,42 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('tables') }}">
-                            <span data-feather="briefcase"></span>
-                            {{ _('Tables') }}
+                        <a class="nav-link" href="{{ url_for('dbmeta') }}">
+                            <span data-feather="database"></span>
+                            {{ _('Database Metadata') }}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('rules') }}">
-                            <span data-feather="file"></span>
+                            <span data-feather="briefcase"></span>
                             {{ _('Rules') }}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('sqlfilter') }}">
-                            <span data-feather="file"></span>
+                            <span data-feather="filter"></span>
                             {{ _('SQL Filter') }}
                         </a>
                     </li>
                     <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
                         <span>{{ _('External Role') }}</span>
                     </h6>
+                    {% if check_roles(url_for('pg_ddm')) %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('external_services') }}">
-                            <span data-feather="file"></span>
+                            <span data-feather="cast"></span>
                             {{ _('Services') }}
                         </a>
                     </li>
+                    {% endif %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('role_to_group') }}">
-                            <span data-feather="file"></span>
+                            <span data-feather="user-check"></span>
                             {{ _('Role to Group') }}
                         </a>
                     </li>
                     <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
-                        <span>{{ _('Users') }}</span>
+                        <span>{{ _('Users for Masking') }}</span>
                     </h6>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('dbusers') }}">
@@ -101,20 +107,30 @@
                         </a>
                     </li>
                      <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
-                        <span>{{ _('General Settings') }}</span>
+                        <span>{{ _('General') }} {{ _('Settings')}}</span>
                     </h6>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('pg_ddm') }}">
-                            <span data-feather="server"></span>
-                            {{ _('PgDdm') }}
-                        </a>
-                    </li>
-                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('user') }}">
-                            <span data-feather="server"></span>
-                            {{ _('Admin User') }}
+                            <span data-feather="info"></span>
+                            {{ _('User Info') }}
                         </a>
                     </li>
+                    {% if check_roles(url_for('pg_ddm')) %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('pg_ddm') }}">
+                            <span data-feather="settings"></span>
+                            {{ _('pg_ddm') }} {{ _('Configuration')}}
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if check_roles(url_for('system_users')) %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('system_users') }}">
+                            <span data-feather="users"></span>
+                            {{ _('System Users') }}
+                        </a>
+                    </li>
+                    {% endif %}
                     <!--<li class="nav-item">-->
                         <!--<a class="nav-link" href="#">-->
                             <!--<span data-feather="bar-chart-2"></span>-->

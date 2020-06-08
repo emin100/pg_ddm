@@ -3,7 +3,7 @@ import datetime
 from flask import json
 from flask_babel import lazy_gettext
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, BooleanField, SelectField, HiddenField
+from wtforms import StringField, PasswordField, SubmitField, BooleanField, SelectField, HiddenField, validators
 from wtforms.fields.html5 import DateField, IntegerField, EmailField
 from wtforms.validators import DataRequired
 from wtforms.widgets import PasswordInput
@@ -29,11 +29,11 @@ class RulesForm(FlaskForm):
                        description=lazy_gettext("Don't use any blank or special character. This field use like a id"))
     description = StringField(lazy_gettext('Description'), id="description")
     group_name = StringField(lazy_gettext('Group Name'), id="autocomplete_groups", validators=[DataRequired()],
-                             description=lazy_gettext('Please search like this(DB.SCHEMA.TABLE.COLUMN)'))
+                             description=lazy_gettext('Search with group name'))
     filter = StringField(lazy_gettext('Filter'), id="filter",
                          description=lazy_gettext('SQL Filter'))
     table_column = StringField(lazy_gettext('Table Column'), id="autocomplete_table", validators=[DataRequired()],
-                               description=lazy_gettext('Please search like this(DB.SCHEMA.TABLE.COLUMN)'))
+                               description=lazy_gettext('Search like this(DB.SCHEMA.TABLE.COLUMN)'))
     enabled = BooleanField(lazy_gettext('Enabled'), default='true')
     rule = SelectField(lazy_gettext('Rule'),
                        choices=[['send_null', lazy_gettext('Send Null')], ['delete_col', lazy_gettext('Delete Column')],
@@ -44,7 +44,7 @@ class RulesForm(FlaskForm):
                                 ['random_phone', lazy_gettext('Random Phone')],
                                 ['random_string', lazy_gettext('Random String')],
                                 ['random_zip', lazy_gettext('Random Zip')]], validators=[DataRequired()],
-                       render_kw={"onchange": "test($(this).val()," + json.dumps(test) + ",'open_close')"})
+                       render_kw={"onchange": "change_form($(this).val()," + json.dumps(test) + ",'open_close')"})
     start_date = DateField(lazy_gettext('Start Date'), format='%Y-%m-%d', default=datetime.datetime(1900, 1, 1),
                            id="open_close_start_date",
                            render_kw={'hidden': True, 'required': False})
@@ -65,25 +65,33 @@ class RulesForm(FlaskForm):
 
 
 class GroupsForm(FlaskForm):
-    name = StringField(lazy_gettext('Name'), validators=[DataRequired()])
+    name = StringField(lazy_gettext('Name'), validators=[DataRequired()],
+                       description=lazy_gettext("Don't use any blank or special character. This field use like a id"))
     enabled = BooleanField(lazy_gettext('Enabled'), default='true')
     desc = StringField(lazy_gettext('Description'), validators=[DataRequired()])
     submit = SubmitField(lazy_gettext(u'Submit'))
 
 
 class DBorCommentUsersForm(FlaskForm):
-    group_name = StringField(lazy_gettext('Group Name'), id="autocomplete_groups", validators=[DataRequired()])
-    user = StringField(lazy_gettext('User ID'), validators=[DataRequired()])
+    group_name = StringField(lazy_gettext('Group Name'), id="autocomplete_groups", validators=[DataRequired()],
+                             description=lazy_gettext('Search with group name'))
+    user = StringField(lazy_gettext('User ID'), validators=[DataRequired()],
+                       description=lazy_gettext('For DB users, database username, for SQL users '))
     enabled = BooleanField(lazy_gettext('Enabled'), default='true')
     submit = SubmitField(lazy_gettext(u'Submit'))
 
 
 class UserForm(FlaskForm):
+    username = StringField(lazy_gettext('Username'), validators=[validators.Length(min=4, max=25)])
     enabled = BooleanField(lazy_gettext('Enabled'))
     locale = SelectField(lazy_gettext('Language'), choices=(('en', 'English'), ('tr', 'Türkçe')),
                          validators=[DataRequired()])
     password = PasswordField(lazy_gettext('Password'))
     email = EmailField(lazy_gettext('E-mail'), validators=[DataRequired()])
+    role = SelectField(lazy_gettext('Role'),
+                       choices=(('editor', lazy_gettext('Editor')), ('admin', lazy_gettext('Admin')),
+                                ('viewer', lazy_gettext('Viewer'))),
+                       validators=[DataRequired()])
     # username = StringField(lazy_gettext('Username'), validators=[DataRequired()])
     submit = SubmitField(lazy_gettext(u'Submit'))
 
@@ -94,7 +102,7 @@ class PgBouncerForm(FlaskForm):
 
 class TableSelectForm(FlaskForm):
     db = SelectField(lazy_gettext('Database'), validators=[DataRequired()])
-    submit = SubmitField(lazy_gettext(u'Submit'))
+    submit = SubmitField(lazy_gettext(u'Select'))
 
 
 class TablesForm(FlaskForm):
@@ -112,9 +120,10 @@ class PassTagForm(FlaskForm):
 
 
 class SQLFilterForm(FlaskForm):
-    table = StringField(lazy_gettext('Table'), id="autocomplete_table", validators=[DataRequired()],
-                        description=lazy_gettext('Please search like this(DB.SCHEMA.TABLE)'))
-    group_name = StringField(lazy_gettext('Group Name'), id="autocomplete_groups")
+    table = StringField(lazy_gettext('Table'), id="autocomplete_table_without_columns", validators=[DataRequired()],
+                        description=lazy_gettext('Search like this(DB.SCHEMA.TABLE)'))
+    group_name = StringField(lazy_gettext('Group Name'), id="autocomplete_groups", validators=[DataRequired()],
+                             description=lazy_gettext('Search with group name'))
     filter = StringField(lazy_gettext('SQL Filter'), validators=[DataRequired()])
     enabled = BooleanField(lazy_gettext('Enabled'), default='true')
 
@@ -122,7 +131,8 @@ class SQLFilterForm(FlaskForm):
 
 
 class ServicesForm(FlaskForm):
-    name = StringField(lazy_gettext('Name'), validators=[DataRequired()])
+    name = StringField(lazy_gettext('Name'), validators=[DataRequired()],
+                       description=lazy_gettext("Don't use any blank or special character. This field use like a id"))
     role_service_url = StringField(lazy_gettext('Role Service Url'), validators=[DataRequired()],
                                    description=lazy_gettext('Text'))
     role_service_param = StringField(lazy_gettext('Role Service Search Parameter'), validators=[DataRequired()])
@@ -143,7 +153,8 @@ class RoleForm(FlaskForm):
                           render_kw={"onchange": "service_change($(this).val())"})
     role = StringField(lazy_gettext('Role Name'), id="autocomplete_role", validators=[DataRequired()],
                        render_kw={"extra": "service"})
-    group_name = StringField(lazy_gettext('Group Name'), id="autocomplete_groups", validators=[DataRequired()])
+    group_name = StringField(lazy_gettext('Group Name'), id="autocomplete_groups", validators=[DataRequired()],
+                             description=lazy_gettext('Search with group name'))
     # service = StringField(lazy_gettext('Services'), id="autocomplete_services", validators=[DataRequired()])
     role_id = HiddenField(lazy_gettext('Group Name'), id="role", validators=[DataRequired()])
     enabled = BooleanField(lazy_gettext('Enabled'), default='true')

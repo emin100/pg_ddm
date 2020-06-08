@@ -16,8 +16,9 @@ class User(UserMixin):
     locale = 'tr'
     enabled = False
     email = None
+    role = 'viewer'
 
-    def __init__(self, username, password=None):
+    def __init__(self, username, password=None, etcd=None):
         self.etcd = Etcd()
         self.username = username
         self.password = self.hash_password(password)
@@ -43,6 +44,7 @@ class User(UserMixin):
                 self.locale = user['locale']
                 self.enabled = user['enabled']
                 self.email = user['email']
+                self.role = user['role']
                 return True
         return False
 
@@ -53,6 +55,7 @@ class User(UserMixin):
         user['locale'] = self.locale
         user['enabled'] = self.enabled
         user['email'] = self.email
+        user['role'] = self.role
         self.etcd.put('/appuser/' + self.username, json.dumps(user))
 
     def is_authenticated(self):
@@ -68,4 +71,4 @@ class User(UserMixin):
         return unicode(self.username)
 
     def __repr__(self):
-        return '<User %r>' % (self.username)
+        return '<User %r>' % self.username

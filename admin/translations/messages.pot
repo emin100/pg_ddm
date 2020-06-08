@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2020-04-29 00:37+0300\n"
+"POT-Creation-Date: 2020-06-04 23:50+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,167 +17,211 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.8.0\n"
 
-#: app.py:109
+#: app.py:92 templates/utils/buttons.html:25
+msgid "Search"
+msgstr ""
+
+#: app.py:146
 msgid "Bye Bye"
 msgstr ""
 
-#: app.py:144
+#: app.py:162
+msgid "Acsess Denied."
+msgstr ""
+
+#: app.py:185
 msgid "Logged in successfully."
 msgstr ""
 
-#: app.py:153
+#: app.py:194
 msgid "Login Failed!"
 msgstr ""
 
-#: app.py:184 app.py:243 app.py:332 app.py:374 app.py:417 app.py:461 app.py:631
-msgid "Update"
-msgstr ""
-
-#: app.py:184 app.py:264 app.py:346 app.py:386 app.py:431 app.py:597
-msgid "List"
-msgstr ""
-
-#: app.py:222
-msgid "DB Error"
-msgstr ""
-
-#: app.py:224
-msgid "General Error"
-msgstr ""
-
-#: app.py:229 app.py:246 app.py:250 app.py:256 templates/main_template.html:58
-msgid "Tables"
-msgstr ""
-
-#: app.py:229 app.py:520
-msgid "Updated"
-msgstr ""
-
-#: app.py:231
-msgid "Database connection"
-msgstr ""
-
-#: app.py:233
-msgid "Database select"
-msgstr ""
-
-#: app.py:242 app.py:329 app.py:345 app.py:385 app.py:430 forms.py:28
-#: forms.py:68
+#: app.py:203 forms.py:28 forms.py:68 forms.py:134
 msgid "Name"
 msgstr ""
 
-#: app.py:242 app.py:329 app.py:629 forms.py:31 forms.py:75 forms.py:82
-#: forms.py:83 forms.py:84 forms.py:126
-msgid "Group Name"
-msgstr ""
-
-#: app.py:252 app.py:585
-msgid "pg_ddm config file not found"
-msgstr ""
-
-#: app.py:254 app.py:587
-msgid "pg_ddm_config_file_path key not found in settings.cfg"
-msgstr ""
-
-#: app.py:264 app.py:346 app.py:386 app.py:431 app.py:597
-msgid "New"
-msgstr ""
-
-#: app.py:297 app.py:325 app.py:330 forms.py:38
-msgid "Rule"
-msgstr ""
-
-#: app.py:297 app.py:357 app.py:396 app.py:441 app.py:610
-msgid "Added"
-msgstr ""
-
-#: app.py:321 app.py:334 templates/main_template.html:64
-msgid "Rules"
-msgstr ""
-
-#: app.py:325 app.py:370 app.py:411 app.py:456 app.py:626
-msgid "Deleted"
-msgstr ""
-
-#: app.py:329
-msgid "Key"
-msgstr ""
-
-#: app.py:329 app.py:345 forms.py:30 forms.py:70
-msgid "Description"
-msgstr ""
-
-#: app.py:329 app.py:345 app.py:385 app.py:430 app.py:629 forms.py:37
-#: forms.py:69 forms.py:77 forms.py:85 forms.py:90 forms.py:119 forms.py:128
+#: app.py:203 app.py:261 app.py:458 app.py:540 app.py:581 app.py:632 app.py:675
+#: app.py:857 forms.py:37 forms.py:70 forms.py:80 forms.py:86 forms.py:118
+#: forms.py:128 forms.py:147 forms.py:160
 msgid "Enabled"
 msgstr ""
 
-#: app.py:329 forms.py:33
-msgid "Filter"
+#: app.py:204 app.py:260 app.py:456 app.py:541 app.py:582 app.py:633 app.py:676
+#: app.py:856
+msgid "New"
 msgstr ""
 
-#: app.py:329 app.py:629 forms.py:124
-msgid "Table"
+#: app.py:205 app.py:260 app.py:370 app.py:456 app.py:541 app.py:582 app.py:633
+#: app.py:676 app.py:856
+msgid "List"
 msgstr ""
 
-#: app.py:330
-msgid "Properties"
+#: app.py:221 app.py:244
+msgid "Service"
 msgstr ""
 
-#: app.py:331 app.py:373 app.py:416 app.py:460 app.py:630
+#: app.py:221 app.py:279 app.py:491 app.py:552 app.py:600 app.py:643 app.py:686
+#: app.py:870
+msgid "Added"
+msgstr ""
+
+#: app.py:221 app.py:279 app.py:415 app.py:491 app.py:552 app.py:600 app.py:643
+#: app.py:686 app.py:775
+msgid "Updated"
+msgstr ""
+
+#: app.py:240
+msgid "Register Services"
+msgstr ""
+
+#: app.py:244 app.py:302 app.py:521 app.py:565 app.py:615 app.py:658 app.py:701
+#: app.py:886
+msgid "Deleted"
+msgstr ""
+
+#: app.py:248 app.py:331 app.py:526 app.py:569 app.py:620 app.py:663 app.py:706
+#: app.py:891 templates/list.html:80
 msgid "Delete"
 msgstr ""
 
-#: app.py:357 app.py:370
+#: app.py:249 app.py:332 app.py:527 app.py:570 app.py:621 app.py:664 app.py:707
+#: app.py:892
+msgid "Update"
+msgstr ""
+
+#: app.py:250 app.py:261 forms.py:152 templates/main_template.html:84
+msgid "Services"
+msgstr ""
+
+#: app.py:261 app.py:457 app.py:857 forms.py:31 forms.py:76 forms.py:125
+#: forms.py:156 forms.py:159
+msgid "Group Name"
+msgstr ""
+
+#: app.py:264 forms.py:105
+msgid "Select"
+msgstr ""
+
+#: app.py:279 app.py:293 app.py:302 app.py:327 app.py:334
+#: templates/main_template.html:91
+msgid "Role to Group"
+msgstr ""
+
+#: app.py:327
+msgid "Refreshed"
+msgstr ""
+
+#: app.py:333 app.py:370
+msgid "Refresh"
+msgstr ""
+
+#: app.py:408
+msgid "DB Error"
+msgstr ""
+
+#: app.py:410
+msgid "General Error"
+msgstr ""
+
+#: app.py:415 app.py:437 app.py:441 app.py:448 templates/main_template.html:62
+msgid "Database Metadata"
+msgstr ""
+
+#: app.py:417
+msgid "Database connection"
+msgstr ""
+
+#: app.py:419
+msgid "Database select"
+msgstr ""
+
+#: app.py:428
+msgid "Columns"
+msgstr ""
+
+#: app.py:444 app.py:844
+msgid "pg_ddm config file not found"
+msgstr ""
+
+#: app.py:446 app.py:846
+msgid "pg_ddm_config_file_path key not found in settings.cfg"
+msgstr ""
+
+#: app.py:457 app.py:540 forms.py:30 forms.py:71
+msgid "Description"
+msgstr ""
+
+#: app.py:457 forms.py:123
+msgid "Table"
+msgstr ""
+
+#: app.py:491 app.py:521 forms.py:38
+msgid "Rule"
+msgstr ""
+
+#: app.py:517 app.py:529 templates/main_template.html:68
+msgid "Rules"
+msgstr ""
+
+#: app.py:552 app.py:565
 msgid "Group"
 msgstr ""
 
-#: app.py:367 app.py:375 templates/main_template.html:52
+#: app.py:562 app.py:571 templates/main_template.html:56
 msgid "Groups"
 msgstr ""
 
-#: app.py:396 app.py:411
-msgid "SQL User"
-msgstr ""
-
-#: app.py:408 app.py:453 templates/main_template.html:74
-msgid "Users"
-msgstr ""
-
-#: app.py:418 templates/main_template.html:85
-msgid "SQL Users"
-msgstr ""
-
-#: app.py:441 app.py:456
-msgid "DB User"
-msgstr ""
-
-#: app.py:462 templates/main_template.html:79
-msgid "DB Users"
-msgstr ""
-
-#: app.py:520 app.py:527 templates/main_template.html:100
-msgid "Admin User"
-msgstr ""
-
-#: app.py:560
-msgid "Closed in config file"
-msgstr ""
-
-#: app.py:589
-msgid "PgDdm Config"
-msgstr ""
-
-#: app.py:610 app.py:623 app.py:626 app.py:629 app.py:633 forms.py:34
-#: forms.py:127 templates/main_template.html:70
-msgid "SQL Filter"
-msgstr ""
-
-#: forms.py:13 forms.py:14
+#: app.py:581 forms.py:13 forms.py:14 forms.py:85
 msgid "Username"
 msgstr ""
 
-#: forms.py:15 forms.py:16 forms.py:93
+#: app.py:581 forms.py:91
+msgid "Role"
+msgstr ""
+
+#: app.py:600
+msgid "System User"
+msgstr ""
+
+#: app.py:612 app.py:655 app.py:698
+msgid "Users"
+msgstr ""
+
+#: app.py:615 app.py:643 app.py:658
+msgid "SQL User"
+msgstr ""
+
+#: app.py:622 app.py:665 templates/main_template.html:106
+msgid "SQL Users"
+msgstr ""
+
+#: app.py:686 app.py:701
+msgid "DB User"
+msgstr ""
+
+#: app.py:708 templates/main_template.html:100
+msgid "DB Users"
+msgstr ""
+
+#: app.py:775 app.py:786
+msgid "Admin User"
+msgstr ""
+
+#: app.py:819
+msgid "Closed in config file"
+msgstr ""
+
+#: app.py:848
+msgid "PgDdm Config"
+msgstr ""
+
+#: app.py:857 app.py:870 app.py:883 app.py:886 app.py:894 forms.py:34
+#: forms.py:127 templates/main_template.html:74
+msgid "SQL Filter"
+msgstr ""
+
+#: forms.py:15 forms.py:16 forms.py:89 forms.py:111 forms.py:146
 msgid "Password"
 msgstr ""
 
@@ -189,16 +233,24 @@ msgstr ""
 msgid "Sign in"
 msgstr ""
 
-#: forms.py:29
+#: forms.py:29 forms.py:69 forms.py:135
 msgid "Don't use any blank or special character. This field use like a id"
 msgstr ""
 
-#: forms.py:32 forms.py:36
-msgid "Please search like this(DB.SCHEMA.TABLE.COLUMN)"
+#: forms.py:32 forms.py:77 forms.py:126 forms.py:157
+msgid "Search with group name"
+msgstr ""
+
+#: forms.py:33
+msgid "Filter"
 msgstr ""
 
 #: forms.py:35
 msgid "Table Column"
+msgstr ""
+
+#: forms.py:36
+msgid "Search like this(DB.SCHEMA.TABLE.COLUMN)"
 msgstr ""
 
 #: forms.py:39
@@ -273,41 +325,105 @@ msgstr ""
 msgid "Length"
 msgstr ""
 
-#: forms.py:64 forms.py:71 forms.py:78 forms.py:86 forms.py:96 forms.py:105
-#: forms.py:114 forms.py:120 forms.py:130
+#: forms.py:64 forms.py:72 forms.py:81 forms.py:96 forms.py:113 forms.py:119
+#: forms.py:130 forms.py:148 forms.py:161
 msgid "Submit"
 msgstr ""
 
-#: forms.py:76
+#: forms.py:78
 msgid "User ID"
 msgstr ""
 
-#: forms.py:91
+#: forms.py:79
+msgid "For DB users, database username, for SQL users "
+msgstr ""
+
+#: forms.py:87
 msgid "Language"
 msgstr ""
 
-#: forms.py:94
+#: forms.py:90
 msgid "E-mail"
+msgstr ""
+
+#: forms.py:92
+msgid "Editor"
+msgstr ""
+
+#: forms.py:92
+msgid "Admin"
+msgstr ""
+
+#: forms.py:93
+msgid "Viewer"
 msgstr ""
 
 #: forms.py:104
 msgid "Database"
 msgstr ""
 
-#: forms.py:111
+#: forms.py:110 forms.py:145
 msgid "User"
 msgstr ""
 
-#: forms.py:118
+#: forms.py:117
 msgid "Tag"
 msgstr ""
 
-#: forms.py:125
-msgid "Please search like this(DB.SCHEMA.TABLE)"
+#: forms.py:124
+msgid "Search like this(DB.SCHEMA.TABLE)"
 msgstr ""
 
-#: templates/dashboard.html:3 templates/main_template.html:46
+#: forms.py:136
+msgid "Role Service Url"
+msgstr ""
+
+#: forms.py:137 forms.py:142
+msgid "Text"
+msgstr ""
+
+#: forms.py:138
+msgid "Role Service Search Parameter"
+msgstr ""
+
+#: forms.py:139
+msgid "Role Service Key"
+msgstr ""
+
+#: forms.py:140
+msgid "Rol Service Value"
+msgstr ""
+
+#: forms.py:141
+msgid "User Service URL"
+msgstr ""
+
+#: forms.py:143
+msgid "User Service Search Parameter"
+msgstr ""
+
+#: forms.py:144
+msgid "User Service Key"
+msgstr ""
+
+#: forms.py:154
+msgid "Role Name"
+msgstr ""
+
+#: templates/dashboard.html:3
 msgid "Dashboard"
+msgstr ""
+
+#: templates/list.html:84
+msgid "Do you want to delete this key?"
+msgstr ""
+
+#: templates/list.html:88
+msgid "No"
+msgstr ""
+
+#: templates/list.html:89
+msgid "Yes"
 msgstr ""
 
 #: templates/login.html:11
@@ -316,22 +432,82 @@ msgstr ""
 
 #: templates/main_template.html:21
 #, python-format
-msgid "Hello %(user)s!"
+msgid "Hello %(user)s"
 msgstr ""
 
 #: templates/main_template.html:30
 msgid "Sign out"
 msgstr ""
 
-#: templates/main_template.html:89
-msgid "General Settings"
+#: templates/main_template.html:46
+msgid "Home"
 msgstr ""
 
-#: templates/main_template.html:94
-msgid "PgDdm"
+#: templates/main_template.html:51
+msgid "Masking/Filter"
 msgstr ""
 
-#: templates/utils/table.html:11
+#: templates/main_template.html:51 templates/main_template.html:110
 msgid "Settings"
+msgstr ""
+
+#: templates/main_template.html:78
+msgid "External Role"
+msgstr ""
+
+#: templates/main_template.html:95
+msgid "Users for Masking"
+msgstr ""
+
+#: templates/main_template.html:110
+msgid "General"
+msgstr ""
+
+#: templates/main_template.html:115
+msgid "User Info"
+msgstr ""
+
+#: templates/main_template.html:122
+msgid "pg_ddm"
+msgstr ""
+
+#: templates/main_template.html:122
+msgid "Configuration"
+msgstr ""
+
+#: templates/main_template.html:130
+msgid "System Users"
+msgstr ""
+
+#: templates/utils/buttons.html:16 templates/utils/buttons.html:17
+msgid "Keyword"
+msgstr ""
+
+#: templates/utils/buttons.html:20
+msgid "Both"
+msgstr ""
+
+#: templates/utils/buttons.html:21 templates/utils/table.html:7
+msgid "Key"
+msgstr ""
+
+#: templates/utils/buttons.html:22
+msgid "Value"
+msgstr ""
+
+#: templates/utils/table.html:64
+msgid "First"
+msgstr ""
+
+#: templates/utils/table.html:68
+msgid "Previous"
+msgstr ""
+
+#: templates/utils/table.html:76
+msgid "Next"
+msgstr ""
+
+#: templates/utils/table.html:79
+msgid "Last"
 msgstr ""
 
