@@ -1,4 +1,4 @@
-FROM ubuntu:19.04
+FROM ubuntu:20.04
 LABEL maintainer="emin100@gmail.com"
 
 RUN apt-get update && apt-get install -y tzdata
