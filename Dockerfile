@@ -11,7 +11,7 @@ RUN apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys B97
 
 # Add PostgreSQL's repository. It contains the most recent stable release
 #     of PostgreSQL, ``11``.
-RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ disco-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main" > /etc/apt/sources.list.d/pgdg.list
 
 # Install ``python-software-properties``, ``software-properties-common`` and PostgreSQL 11
 #  There are some warnings (in red) that show up during the build. You can hide
@@ -46,10 +46,10 @@ RUN    /etc/init.d/postgresql start &&\
 
 # Adjust PostgreSQL configuration so that remote connections to the
 # database are possible.
-RUN echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/11/main/pg_hba.conf
+RUN echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/12/main/pg_hba.conf
 
 # And add ``listen_addresses`` to ``/etc/postgresql/11/main/postgresql.conf``
-RUN echo "listen_addresses='*'" >> /etc/postgresql/11/main/postgresql.conf
+RUN echo "listen_addresses='*'" >> /etc/postgresql/12/main/postgresql.conf
 
 USER root
 RUN useradd -ms /bin/bash pg_ddm

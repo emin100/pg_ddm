@@ -7,6 +7,7 @@ service postgresql start
 #su postgres -c 'pgbouncer -d /etc/pgbouncer/pgbouncer.ini'
 cd /etc/pg_ddm/
 source venv/bin/activate
+su pg_ddm -c "cd /etc/pg_ddm/ && source venv/bin/activate && pip install -r admin/requirements.txt"
 cd admin
 
 if [[ -f "/etc/pg_ddm/mask_ruby/import.rb" ]]; then
