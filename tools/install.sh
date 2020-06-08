@@ -66,7 +66,7 @@ make install
 
 cd ${PgDdmSourcePath}/pg_query
 gem build pg_query.gemspec
-gem install hashie etcdv3
+gem install hashie etcdv3 awesome_print
 gem install pg_query*.gem
 
 cd $PgDdmSourcePath

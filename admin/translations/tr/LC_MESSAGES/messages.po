@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2020-06-04 23:50+0300\n"
+"POT-Creation-Date: 2020-06-08 17:05+0300\n"
 "PO-Revision-Date: 2019-02-20 13:51+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: tr\n"
@@ -42,19 +42,19 @@ msgstr "Giriş Başarısız!"
 msgid "Name"
 msgstr "Ad"
 
-#: app.py:203 app.py:261 app.py:458 app.py:540 app.py:581 app.py:632 app.py:675
-#: app.py:857 forms.py:37 forms.py:70 forms.py:80 forms.py:86 forms.py:118
+#: app.py:203 app.py:261 app.py:459 app.py:541 app.py:582 app.py:633 app.py:676
+#: app.py:859 forms.py:37 forms.py:70 forms.py:80 forms.py:86 forms.py:118
 #: forms.py:128 forms.py:147 forms.py:160
 msgid "Enabled"
 msgstr "Aktif"
 
-#: app.py:204 app.py:260 app.py:456 app.py:541 app.py:582 app.py:633 app.py:676
-#: app.py:856
+#: app.py:204 app.py:260 app.py:457 app.py:542 app.py:583 app.py:634 app.py:677
+#: app.py:858
 msgid "New"
 msgstr "Yeni"
 
-#: app.py:205 app.py:260 app.py:370 app.py:456 app.py:541 app.py:582 app.py:633
-#: app.py:676 app.py:856
+#: app.py:205 app.py:260 app.py:371 app.py:457 app.py:542 app.py:583 app.py:634
+#: app.py:677 app.py:858
 msgid "List"
 msgstr "Liste"
 
@@ -62,13 +62,13 @@ msgstr "Liste"
 msgid "Service"
 msgstr "Servis"
 
-#: app.py:221 app.py:279 app.py:491 app.py:552 app.py:600 app.py:643 app.py:686
-#: app.py:870
+#: app.py:221 app.py:279 app.py:492 app.py:553 app.py:601 app.py:644 app.py:687
+#: app.py:872
 msgid "Added"
 msgstr "Eklendi"
 
-#: app.py:221 app.py:279 app.py:415 app.py:491 app.py:552 app.py:600 app.py:643
-#: app.py:686 app.py:775
+#: app.py:221 app.py:279 app.py:416 app.py:492 app.py:553 app.py:601 app.py:644
+#: app.py:687 app.py:776
 msgid "Updated"
 msgstr "Güncellendi"
 
@@ -76,18 +76,18 @@ msgstr "Güncellendi"
 msgid "Register Services"
 msgstr "Servis Kaydı"
 
-#: app.py:244 app.py:302 app.py:521 app.py:565 app.py:615 app.py:658 app.py:701
-#: app.py:886
+#: app.py:244 app.py:303 app.py:522 app.py:566 app.py:616 app.py:659 app.py:702
+#: app.py:888
 msgid "Deleted"
 msgstr "Silindi"
 
-#: app.py:248 app.py:331 app.py:526 app.py:569 app.py:620 app.py:663 app.py:706
-#: app.py:891 templates/list.html:80
+#: app.py:248 app.py:332 app.py:527 app.py:570 app.py:621 app.py:664 app.py:707
+#: app.py:893 templates/list.html:80
 msgid "Delete"
 msgstr "Sil"
 
-#: app.py:249 app.py:332 app.py:527 app.py:570 app.py:621 app.py:664 app.py:707
-#: app.py:892
+#: app.py:249 app.py:333 app.py:528 app.py:571 app.py:622 app.py:665 app.py:708
+#: app.py:894
 msgid "Update"
 msgstr "Düzenle"
 
@@ -95,7 +95,7 @@ msgstr "Düzenle"
 msgid "Services"
 msgstr "Servisler"
 
-#: app.py:261 app.py:457 app.py:857 forms.py:31 forms.py:76 forms.py:125
+#: app.py:261 app.py:458 app.py:859 forms.py:31 forms.py:76 forms.py:125
 #: forms.py:156 forms.py:159
 msgid "Group Name"
 msgstr "Grup Adı"
@@ -104,122 +104,122 @@ msgstr "Grup Adı"
 msgid "Select"
 msgstr "Seçiniz"
 
-#: app.py:279 app.py:293 app.py:302 app.py:327 app.py:334
+#: app.py:279 app.py:294 app.py:303 app.py:328 app.py:335
 #: templates/main_template.html:91
 msgid "Role to Group"
 msgstr "Rolden Grup Tanımlama"
 
-#: app.py:327
+#: app.py:328
 msgid "Refreshed"
 msgstr "Yenilendi"
 
-#: app.py:333 app.py:370
+#: app.py:334 app.py:371
 msgid "Refresh"
 msgstr "Yenile"
 
-#: app.py:408
+#: app.py:409
 msgid "DB Error"
 msgstr "Veritabanı Hatası"
 
-#: app.py:410
+#: app.py:411
 msgid "General Error"
 msgstr "Genel Hata"
 
-#: app.py:415 app.py:437 app.py:441 app.py:448 templates/main_template.html:62
+#: app.py:416 app.py:438 app.py:442 app.py:449 templates/main_template.html:62
 msgid "Database Metadata"
 msgstr "Veritabanı Meta Verileri"
 
-#: app.py:417
+#: app.py:418
 msgid "Database connection"
 msgstr "Veritabanı Bağlantısı"
 
-#: app.py:419
+#: app.py:420
 msgid "Database select"
 msgstr "Veritabanı Seçimi"
 
-#: app.py:428
+#: app.py:429
 msgid "Columns"
 msgstr "Kolonlar"
 
-#: app.py:444 app.py:844
+#: app.py:445 app.py:846
 msgid "pg_ddm config file not found"
 msgstr "pg_ddm konfigürasyon dosyası bulunamadı."
 
-#: app.py:446 app.py:846
+#: app.py:447 app.py:848
 msgid "pg_ddm_config_file_path key not found in settings.cfg"
 msgstr ""
 "pg_ddm_config_file_path parametresş settings.cfg dosyasının içerisinde "
 "bulunamadı."
 
-#: app.py:457 app.py:540 forms.py:30 forms.py:71
+#: app.py:458 app.py:541 forms.py:30 forms.py:71
 msgid "Description"
 msgstr "Tanım"
 
-#: app.py:457 forms.py:123
+#: app.py:458 forms.py:123
 msgid "Table"
 msgstr "Tablo"
 
-#: app.py:491 app.py:521 forms.py:38
+#: app.py:492 app.py:522 forms.py:38
 msgid "Rule"
 msgstr "Kural"
 
-#: app.py:517 app.py:529 templates/main_template.html:68
+#: app.py:518 app.py:530 templates/main_template.html:68
 msgid "Rules"
 msgstr "Kurallar"
 
-#: app.py:552 app.py:565
+#: app.py:553 app.py:566
 msgid "Group"
 msgstr "Grup"
 
-#: app.py:562 app.py:571 templates/main_template.html:56
+#: app.py:563 app.py:572 templates/main_template.html:56
 msgid "Groups"
 msgstr "Gruplar"
 
-#: app.py:581 forms.py:13 forms.py:14 forms.py:85
+#: app.py:582 forms.py:13 forms.py:14 forms.py:85
 msgid "Username"
 msgstr "Kullanıcı Adı"
 
-#: app.py:581 forms.py:91
+#: app.py:582 forms.py:91
 msgid "Role"
 msgstr "Rol"
 
-#: app.py:600
+#: app.py:601
 msgid "System User"
 msgstr "Sistem Kullanıcıları"
 
-#: app.py:612 app.py:655 app.py:698
+#: app.py:613 app.py:656 app.py:699
 msgid "Users"
 msgstr "Kullanıcılar"
 
-#: app.py:615 app.py:643 app.py:658
+#: app.py:616 app.py:644 app.py:659
 msgid "SQL User"
 msgstr "SQL Kullanıcısı"
 
-#: app.py:622 app.py:665 templates/main_template.html:106
+#: app.py:623 app.py:666 templates/main_template.html:106
 msgid "SQL Users"
 msgstr "SQL Kullanıcıları"
 
-#: app.py:686 app.py:701
+#: app.py:687 app.py:702
 msgid "DB User"
 msgstr "Veritabanı Kullanıcısı"
 
-#: app.py:708 templates/main_template.html:100
+#: app.py:709 templates/main_template.html:100
 msgid "DB Users"
 msgstr "Veritabanı Kullanıcıları"
 
-#: app.py:775 app.py:786
-msgid "Admin User"
-msgstr "Yetkili Kullanıcı"
+#: app.py:776 app.py:788 templates/main_template.html:115
+msgid "User Info"
+msgstr "Kullanıcı Bilgisi"
 
-#: app.py:819
+#: app.py:821
 msgid "Closed in config file"
 msgstr "Konfigürasyon dosyasında kapatılmış."
 
-#: app.py:848
+#: app.py:850
 msgid "PgDdm Config"
 msgstr "PgDdm Konfigürasyon"
 
-#: app.py:857 app.py:870 app.py:883 app.py:886 app.py:894 forms.py:34
+#: app.py:859 app.py:872 app.py:885 app.py:888 app.py:896 forms.py:34
 #: forms.py:127 templates/main_template.html:74
 msgid "SQL Filter"
 msgstr "SQL Filtreleri"
@@ -389,31 +389,31 @@ msgstr "Metin"
 
 #: forms.py:138
 msgid "Role Service Search Parameter"
-msgstr ""
+msgstr "Rol Servisi Arama Parametresi"
 
 #: forms.py:139
 msgid "Role Service Key"
-msgstr ""
+msgstr "Rol Servisi Anahtar"
 
 #: forms.py:140
 msgid "Rol Service Value"
-msgstr ""
+msgstr "Rol Servisi Değer"
 
 #: forms.py:141
 msgid "User Service URL"
-msgstr ""
+msgstr "Kullanıcı Servisi URL"
 
 #: forms.py:143
 msgid "User Service Search Parameter"
-msgstr ""
+msgstr "Kullanıcı Servisi Arama Parametresi"
 
 #: forms.py:144
 msgid "User Service Key"
-msgstr ""
+msgstr "Kullanıcı Servisi Anahtar"
 
 #: forms.py:154
 msgid "Role Name"
-msgstr ""
+msgstr "Rol"
 
 #: templates/dashboard.html:3
 msgid "Dashboard"
@@ -467,10 +467,6 @@ msgstr "Maskelenecek Kullanıcılar"
 #: templates/main_template.html:110
 msgid "General"
 msgstr "Genel"
-
-#: templates/main_template.html:115
-msgid "User Info"
-msgstr "Kullanıcı Bilgisi"
 
 #: templates/main_template.html:122
 msgid "pg_ddm"
@@ -766,4 +762,7 @@ msgstr "Son"
 
 #~ msgid " Settings"
 #~ msgstr ""
+
+#~ msgid "Admin User"
+#~ msgstr "Yetkili Kullanıcı"
 
