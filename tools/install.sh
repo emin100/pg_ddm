@@ -77,7 +77,7 @@ cp -R admin mask_ruby $PgDdmPath/
 if [ ! -f $PgDdmPath/pg_ddm.ini ] || [ $NEWINSTALL -eq 1 ];
 then
     cp -R  $PgDdmSourcePath/pgbouncer/etc/pg_ddm.ini  $PgDdmPath/
-    sed -i 's/\[databases\]/\[databases\]\ndocker = host=localhost dbname=docker/g' /etc/pg_ddm/pg_ddm.ini
+    sed -i 's/\[databases\]/\[databases\]\ndocker = host=localhost dbname=docker search_path=public/g' /etc/pg_ddm/pg_ddm.ini
     sed -i 's/listen_addr = 127.0.0.1/listen_addr = */g' /etc/pg_ddm/pg_ddm.ini
     echo '"docker"  "md5fd33bb5f0e7607674a50a658b5bbfa2e"' >  $PgDdmPath/userlist.txt
 fi

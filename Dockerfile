@@ -17,7 +17,8 @@ RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main" > /etc/a
 #  There are some warnings (in red) that show up during the build. You can hide
 #  them by prefixing each apt-get statement with DEBIAN_FRONTEND=noninteractive
 RUN apt-get install -y  postgresql postgresql-client postgresql-contrib \
-make etcd virtualenv libevent-dev pkg-config openssl libtool m4 autotools-dev automake libssl-dev ruby ruby-dev vim git
+make etcd virtualenv libevent-dev pkg-config openssl libtool m4 autotools-dev \
+automake libssl-dev ruby ruby-dev vim git
 
 RUN apt-get install -y wget
 
