@@ -564,7 +564,7 @@ def groups(url_type=None):
     elif url_type == 'delete':
         remove_dependency(flask.request.args.get('key'))
         flash(_('Group') + ' ' + _('Deleted'), 'error')
-        # return flask.redirect(flask.url_for('groups'))
+        return flask.redirect(flask.url_for('groups'))
     group_list = etcd_conn.search('/groups/')
     page = pagination(len(group_list))
     links = [{'name': _('Delete'), 'type': 'danger', 'link': '/groups/delete'},

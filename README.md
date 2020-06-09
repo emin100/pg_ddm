@@ -51,7 +51,7 @@
     cd ../pg_query
     gem build pg_query.gemspec 
     sudo gem install pg_query-*.gem
-    sudo gem install hashie etcdv3
+    sudo gem install hashie etcdv3 awesome_print
     
     
 ###### Install UI Things
