@@ -1,14 +1,16 @@
 # INSTALLATION
  
-## OVER Docker
-    
-    docker run -d -p 15432:15432 -p 25432:25432 -p 35432:5432 -p 42379:2379 --name pg_test emin100/pg_ddm
+## Docker
+```console
+docker run -d -p 15432:15432 -p 25432:25432 -p 35432:5432 -p 42379:2379 \
+    --name pg_test emin100/pg_ddm
+```
  
   
  
  
  | Type | Use this port in docker conteiner  | Use this port out docker container  |
- | ------- | :---: | :---: |
+ | --------------------------------------------------------- | :--------------: | :--------------: |
  | pg_ddm connection port as the same as pgbouncer | 15432 | 15432 |
  | pg_ddm UI port. Connect http://localhost:25432. Default username and password is admin | 25432 | 25432 |
  | postgresql instance port. You can direct accses postgresql. Default username, password and dbname is docker.  | 5432 | 35432 |
@@ -18,122 +20,255 @@
  
  Thats All!
  
-## OVER Source Code
+## Source Code
      
-###### Install dependency
+### Install dependency
  
-    sudo apt -y install git pandoc make etcd virtualenv libevent-dev pkg-config openssl libtool m4 autotools-dev automake libssl-dev ruby ruby-dev
+```bash
+sudo apt -y install git pandoc make etcd virtualenv libevent-dev \
+    pkg-config openssl libtool m4 autotools-dev \
+    automake libssl-dev ruby ruby-dev
+```
     
-###### Download source codes(pg_ddm, pg_bouncer, pg_query)
+### Download source codes(pg_ddm, pg_bouncer, pg_query)
  
-    git clone https://github.com/emin100/pg_ddm.git --recursive
-    cd pg_ddm
+```bash
+git clone https://github.com/emin100/pg_ddm.git --recursive
+cd pg_ddm
+```
+
+### Pgbouncer source code patch
+
+```bash
+cp -R pgbouncer_diff/* pgbouncer/
+cd pgbouncer
+git apply pg_ddm.patch
+``` 
+
+### Install pg_ddm(Need root user for install)
+   
+```bash
+sudo adduser --system --shell /bin/bash --home /etc/pg_ddm --group  pg_ddm
+sudo passwd pg_ddm
+cd ..
+./tools/local_install.sh 1 pg_ddm 1
+```
+    
+    
+### Install Ruby Things
  
+```bash
+cd pg_query
+gem build pg_query.gemspec 
+sudo gem install pg_query-*.gem
+sudo gem install hashie etcdv3 awesome_print
+cd ..
+```
+    
+### Start etcd
 
-###### Pgbouncer source code patch
+```bash
+sudo service start etcd
+```  
+    
+### Add admin user to etcd for UI
 
-    cp -R pgbouncer_diff/* pgbouncer/
-    cd pgbouncer
-    git apply pg_ddm.patch
-    
-
-###### Install pg_ddm(Need root user for install)
-    
-    sudo adduser --system --shell /bin/bash --home /etc/pg_ddm --group  pg_ddm
-    sudo passwd pg_ddm
-    cd ..
-    ./tools/local_install.sh 1 pg_ddm 1
-    
-    
-###### Install Ruby Things
- 
-    cd pg_query
-    gem build pg_query/pg_query.gemspec 
-    sudo gem install pg_query-*.gem
-    sudo gem install hashie etcdv3 awesome_print
-    cd ..
-    
-###### Start etcd
-
-    sudo service start etcd  
-    
-###### Add admin user to etcd for UI
-
-    ruby mask_ruby/import.rb
+```bash
+ruby mask_ruby/import.rb
+```
       
     
-###### Start pg_ddm
+### Start pg_ddm
 
-    su - pg_ddm
-    pg_ddm /etc/pg_ddm/pg_ddm.ini -R -d  
+```bash
+su - pg_ddm
+pg_ddm /etc/pg_ddm/pg_ddm.ini -R -d  
+```
     
-###### Install UI Things
-    
-    cd /etc/pg_ddm
-    virtualenv --python=python3 venv
-    source venv/bin/activate
-    cd admin
-    pip install -r requirements.txt
+### Install UI Things
+
+```bash
+cd /etc/pg_ddm
+virtualenv --python=python3 venv
+source venv/bin/activate
+cd admin
+pip install -r requirements.txt
+```
 
     
-###### Start ui
+### Start ui
 
-    nohup /etc/pg_ddm/venv/bin/python3 /etc/pg_ddm/admin/app.py > /var/log/pg_ddm/pg_ddm_ui.log &
+```bash
+nohup /etc/pg_ddm/venv/bin/python3 \
+    /etc/pg_ddm/admin/app.py > /var/log/pg_ddm/pg_ddm_ui.log &
+```   
     
-    
-# Change Settings
-###### pg_ddm settings
+
+# pg_ddm config
 
 /etc/pg_ddm/pg_ddm.ini
+
+## pg_ddm_enabled
+
+Enable / Disable dinamik data masking. 
+
+Default: 1
+
+## Etcd Settings
+
+### etcd_host 
+
+Default: localhost
+
+### etcd_port
+
+Default: 2379
+
+### etcd_user
+
+Default: disabled
+
+### etcd_passwd
+
+This parameter is depend on etcd_user. If etcd_user parameter is disabled, this parameter is not used.
+
+Default: 1234
+
+## Aplication user and pass tag
+
+### user_regex
+
+Use this regex for find user_id in SQL comment. This parameter is ruby style regex.
+
+Default: \/\*.*user_id=([0-9]*)
+
+```sql
+/* user_id=2089 */ SELECT * FROM tb_pg_ddm;
+Regex Result: 2089
 ```
-pg_ddm_enabled = 1
 
-;; Etcd settings
-etcd_host = localhost
-etcd_port = 2379
-; etcd_user = root
-etcd_passwd = 1234
 
-;; User ID in comment
-user_regex = \/\*.*user_id=([0-9]*)
+### tag_regex
 
-;; Pass Tag if in comment, sql is not rewrite
-tag_regex = \/\*.*pass_tag=([0-9A-z]*)
-;tag_users = users1
+This paramater is depend on tag_users. 
+If your connection user in tag_user list and send pass_tag in SQL comment, SQL is not process by pg_ddm. 
+This parameter is ruby style regex.
 
-;; Ini Route
-pg_ddm_ini_route = 0
+Default: \/\*.*pass_tag=([0-9A-z]*)
 
-;; Rewrite Route
-pg_ddm_rewrite_route = 0
+```sql
+/* pass_tag=abc */ SELECT * FROM tb_pg_ddm;
+Regex Result: abc
 ```
 
-###### ui settings
+### tag_users
+
+Use for permit tag_regex.
+
+Default: disabled
+
+```ini
+tag_users = user1, user2, user3
+```
+
+## Ini Route
+### pg_ddm_ini_route
+
+Default: disabled
+
+
+## Rewrite Route
+### pg_ddm_rewrite_route
+
+Default: disabled
+
+
+# ui settings
 
 /etc/pg_ddm/admin/conf/settings.cfg
-```
-[general]
-pg_ddm_config_file_path=/etc/pg_ddm/pg_ddm.ini
-get_db_info_in_pg_ddm_config_file=true
-row_in_page=20
-debug=True
-host=0.0.0.0
-port=25432
 
-[etcd]
-host = localhost
-port = 2379
-;ca_cert = None
-;cert_key = None
-;cert_cert = None
-;timeout = None
-;user = None
-;password = None
-;grpc_options = None
+## General
+### pg_ddm_config_file_path
 
-[database]
-;test_db = host=localhost dbname=test_db
+If install UI to diffrent server, you can leave blank this parameter.
+
+Default: /etc/pg_ddm/pg_ddm.ini
+
+### get_db_info_in_pg_ddm_config_file
+
+Get database connection params in pg_ddm config file.
+If disable this parameter, UI is use database section in this configuration file instead of pg_ddm config file.
+
+Default: true
+
+### row_in_page
+
+How many records  is show in the UI lists.
+
+Default: 20
+
+### debug
+
+Python debug parameter.
+
+Default: True
+
+### host
+
+UI host IP
+
+Default: 0.0.0.0
+
+### port
+
+UI port
+Default: 25432
+
+## Etcd
+### host
+
+Default: localhost
+
+### port
+
+Default: 2379
+
+### ca_cert
+
+Default: disabled
+
+### cert_key = None
+
+Default: disabled
+
+### cert_cert = None
+
+Default: disabled
+
+### timeout = None
+
+Default: disabled
+
+### user = None
+
+Default: disabled
+
+### password = None
+
+Default: disabled
+
+### grpc_options = None
+
+Default: disabled
+
+
+## Database
+
+```ini
+test_db = host=localhost dbname=test_db
 ```
+
+
 
 
 
@@ -1170,6 +1305,31 @@ Minimal config:
     template1 = host=127.0.0.1 dbname=template1 auth_user=someuser
 
     [pgbouncer]
+    ;;;
+    ;;; Pg_ddm settings
+    ;;;
+    
+    pg_ddm_enabled = 1
+    
+    ;; Etcd settings
+    etcd_host = localhost
+    etcd_port = 2379
+    ; etcd_user = root
+    etcd_passwd = 1234
+    
+    ;; User ID in comment
+    user_regex = \/\*.*user_id=([0-9]*)
+    
+    ;; Pass Tag if in comment, sql is not rewrite
+    tag_regex = \/\*.*pass_tag=([0-9A-z]*)
+    ;tag_users = users1
+    
+    ;; Ini Route
+    pg_ddm_ini_route = 0
+    
+    ;; Rewrite Route
+    pg_ddm_rewrite_route = 0
+
     pool_mode = session
     listen_port = 6432
     listen_addr = 127.0.0.1
