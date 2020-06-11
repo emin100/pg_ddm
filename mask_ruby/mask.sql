@@ -2,6 +2,8 @@
 -- PostgreSQL database dump
 --
 
+-- Dumped from database version 11.3
+-- Dumped by pg_dump version 12.3 (Ubuntu 12.3-1.pgdg18.04+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -10,6 +12,7 @@ SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
 SET check_function_bodies = false;
+SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
@@ -27,11 +30,20 @@ ALTER SCHEMA mask OWNER TO postgres;
 --
 
 CREATE FUNCTION mask.partial(ov text, prefix integer, padding text, suffix integer) RETURNS text
-    LANGUAGE sql IMMUTABLE
+    LANGUAGE sql IMMUTABLE STRICT
     AS $$
-  SELECT substring(ov FROM 1 FOR prefix)
-      || padding
-      || LPAD(substring(ov FROM (length(ov)-suffix+1) FOR suffix),(length(ov)-prefix-suffix),padding);
+  SELECT CASE WHEN length(ov) > 2 THEN (substring(ov FROM 1 FOR prefix)
+
+      || LPAD(substring(ov FROM (length(ov)-suffix+1) FOR suffix),(length(ov)-prefix),padding))
+      WHEN prefix = 0 THEN
+       (substring(ov FROM 1 FOR 0)
+
+      || LPAD(substring(ov FROM (length(ov)-suffix+1) FOR suffix),(length(ov)-0),padding))
+       ELSE (
+       substring(ov FROM 1 FOR 1)
+
+      || LPAD(substring(ov FROM (length(ov)+1) FOR 0),(length(ov)-1),padding)
+       ) END;
 $$;
 
 
@@ -44,14 +56,23 @@ ALTER FUNCTION mask.partial(ov text, prefix integer, padding text, suffix intege
 CREATE FUNCTION mask.partial_email(ov text) RETURNS text
     LANGUAGE sql IMMUTABLE
     AS $$
+
   SELECT substring(regexp_replace(ov, '@.*', '') FROM 1 FOR 2)
+
       || '******'
+
       || '@'
+
       || substring(regexp_replace(ov, '.*@', '') FROM 1 FOR 2)
+
       || '******'
+
       || '.'
+
       || regexp_replace(ov, '.*\.', '') 
+
   ;
+
 $$;
 
 
@@ -64,7 +85,9 @@ ALTER FUNCTION mask.partial_email(ov text) OWNER TO postgres;
 CREATE FUNCTION mask.random_date() RETURNS timestamp with time zone
     LANGUAGE sql
     AS $$
+
     SELECT mask.random_date_between('01/01/1900'::DATE,now());
+
 $$;
 
 
@@ -77,7 +100,9 @@ ALTER FUNCTION mask.random_date() OWNER TO postgres;
 CREATE FUNCTION mask.random_date_between(date_start timestamp with time zone, date_end timestamp with time zone) RETURNS timestamp with time zone
     LANGUAGE sql
     AS $$
+
     SELECT (random()*(date_end-date_start))::interval+date_start;
+
 $$;
 
 
@@ -90,7 +115,9 @@ ALTER FUNCTION mask.random_date_between(date_start timestamp with time zone, dat
 CREATE FUNCTION mask.random_int_between(int_start integer, int_stop integer) RETURNS integer
     LANGUAGE sql
     AS $$
+
     SELECT CAST ( random()*(int_stop-int_start)+int_start AS INTEGER );
+
 $$;
 
 
@@ -103,7 +130,9 @@ ALTER FUNCTION mask.random_int_between(int_start integer, int_stop integer) OWNE
 CREATE FUNCTION mask.random_phone(phone_prefix text DEFAULT '0'::text) RETURNS text
     LANGUAGE sql
     AS $$
+
     SELECT phone_prefix || CAST((select code from mask.phone_code ORDER BY random() LIMIT 1) AS TEXT) || CAST(mask.random_int_between(1000000,9999999) AS TEXT) AS "phone";
+
 $$;
 
 
@@ -116,12 +145,19 @@ ALTER FUNCTION mask.random_phone(phone_prefix text) OWNER TO postgres;
 CREATE FUNCTION mask.random_string(l integer) RETURNS text
     LANGUAGE sql
     AS $$
+
   SELECT array_to_string(
+
     array(
+
         select substr('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',((random()*(36-1)+1)::integer),1)
+
         from generate_series(1,l)
+
     ),''
+
   );
+
 $$;
 
 
@@ -134,20 +170,25 @@ ALTER FUNCTION mask.random_string(l integer) OWNER TO postgres;
 CREATE FUNCTION mask.random_zip() RETURNS text
     LANGUAGE sql
     AS $$
+
   SELECT array_to_string(
+
          array(
+
                 select substr('0123456789',((random()*(10-1)+1)::integer),1)
+
                 from generate_series(1,5)
+
             ),''
+
           );
+
 $$;
 
 
 ALTER FUNCTION mask.random_zip() OWNER TO postgres;
 
 SET default_tablespace = '';
-
-SET default_with_oids = false;
 
 --
 -- Name: phone_code; Type: TABLE; Schema: mask; Owner: postgres
