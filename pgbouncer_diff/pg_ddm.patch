@@ -125,17 +125,23 @@ index 9884dd8..cf2deae 100644
 +doc/pg_ddm.1 doc/pg_ddm.5:
  	$(MAKE) -C doc
 diff --git a/configure.ac b/configure.ac
-index 05ba08e..3bfe9ae 100644
+index 05ba08e..232c9a2 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -1,6 +1,6 @@
+@@ -1,9 +1,9 @@
  dnl Process this file with autoconf to produce a configure script.
  
 -AC_INIT([PgBouncer],
+-        [1.12.0],
+-        [https://github.com/pgbouncer/pgbouncer/issues], [],
+-        [https://www.pgbouncer.org/])
 +AC_INIT([Pg_Ddm],
-         [1.12.0],
-         [https://github.com/pgbouncer/pgbouncer/issues], [],
-         [https://www.pgbouncer.org/])
++        [1.12.0.1],
++        [https://github.com/emin100/pg_ddm/issues], [],
++        [https://emin100.github.io/pg_ddm/])
+ AC_CONFIG_SRCDIR(src/janitor.c)
+ AC_CONFIG_HEADER(lib/usual/config.h)
+ AC_PREREQ([2.59])
 diff --git a/doc/Makefile b/doc/Makefile
 index cc1d6ad..e83c3d4 100644
 --- a/doc/Makefile
@@ -327,9 +333,18 @@ index 11b4bee..589a7e6 100644
  	db->db_dead = 0;
  	/* assuming not an autodb */
 diff --git a/src/main.c b/src/main.c
-index 43d6582..491d92b 100644
+index 43d6582..9235730 100644
 --- a/src/main.c
 +++ b/src/main.c
+@@ -34,7 +34,7 @@
+ 
+ static void usage(const char *exe)
+ {
+-	printf("%s is a connection pooler for PostgreSQL.\n\n", exe);
++	printf("%s is a dynamic data masker and connection pooler for PostgreSQL.\n\n", exe);
+ 	printf("Usage:\n");
+ 	printf("  %s [OPTION]... CONFIG_FILE\n", exe);
+ 	printf("\nOptions:\n");
 @@ -169,6 +169,16 @@ char *cf_server_tls_ca_file;
  char *cf_server_tls_cert_file;
  char *cf_server_tls_key_file;
