@@ -125,18 +125,18 @@ index 9884dd8..cf2deae 100644
 +doc/pg_ddm.1 doc/pg_ddm.5:
  	$(MAKE) -C doc
 diff --git a/configure.ac b/configure.ac
-index 05ba08e..232c9a2 100644
+index 36fec7c..e3b44ff 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -1,9 +1,9 @@
  dnl Process this file with autoconf to produce a configure script.
  
 -AC_INIT([PgBouncer],
--        [1.12.0],
+-        [1.14.0],
 -        [https://github.com/pgbouncer/pgbouncer/issues], [],
 -        [https://www.pgbouncer.org/])
 +AC_INIT([Pg_Ddm],
-+        [1.12.0.1],
++        [1.14.0.1],
 +        [https://github.com/emin100/pg_ddm/issues], [],
 +        [https://emin100.github.io/pg_ddm/])
  AC_CONFIG_SRCDIR(src/janitor.c)
@@ -186,10 +186,10 @@ index cc1d6ad..e83c3d4 100644
 -	$(MAKE) -C ../../pgbouncer.github.io
 +	$(MAKE) -C ../../pg_ddm.github.io
 diff --git a/include/bouncer.h b/include/bouncer.h
-index b9f2b9f..97e3b62 100644
+index 4701aec..658b234 100644
 --- a/include/bouncer.h
 +++ b/include/bouncer.h
-@@ -100,6 +100,8 @@ typedef struct ScramState ScramState;
+@@ -104,6 +104,8 @@ typedef struct ScramState ScramState;
  
  extern int cf_sbuf_len;
  
@@ -198,7 +198,7 @@ index b9f2b9f..97e3b62 100644
  #include "util.h"
  #include "iobuf.h"
  #include "sbuf.h"
-@@ -345,6 +347,11 @@ struct PgDatabase {
+@@ -358,6 +360,11 @@ struct PgDatabase {
  	int connection_count;	/* total connections for this database in all pools */
  
  	struct AATree user_tree;	/* users that have been queried on this database */
@@ -210,7 +210,7 @@ index b9f2b9f..97e3b62 100644
  };
  
  
-@@ -530,6 +537,16 @@ extern char *cf_server_tls_ca_file;
+@@ -545,6 +552,16 @@ extern char *cf_server_tls_ca_file;
  extern char *cf_server_tls_cert_file;
  extern char *cf_server_tls_key_file;
  extern char *cf_server_tls_ciphers;
@@ -228,7 +228,7 @@ index b9f2b9f..97e3b62 100644
  extern const struct CfLookup pool_mode_map[];
  
 diff --git a/include/objects.h b/include/objects.h
-index afb7ae9..fa185c7 100644
+index b8c2d2f..b8d722e 100644
 --- a/include/objects.h
 +++ b/include/objects.h
 @@ -30,6 +30,7 @@ extern struct Slab *user_cache;
@@ -239,8 +239,15 @@ index afb7ae9..fa185c7 100644
  PgUser *find_user(const char *name);
  PgPool *get_pool(PgDatabase *, PgUser *);
  PgSocket *compare_connections_by_time(PgSocket *lhs, PgSocket *rhs);
+diff --git a/lib b/lib
+index 8b604da..56b3e73 160000
+--- a/lib
++++ b/lib
+@@ -1 +1 @@
+-Subproject commit 8b604da54a44423fa8e01d6f0039b0480784cff0
++Subproject commit 56b3e73181c1682375481b607a35d813cac84382
 diff --git a/src/client.c b/src/client.c
-index 2171125..33cc7ce 100644
+index 28c6556..42c76ca 100644
 --- a/src/client.c
 +++ b/src/client.c
 @@ -58,6 +58,7 @@ static bool check_client_passwd(PgSocket *client, const char *passwd)
@@ -266,7 +273,7 @@ index 2171125..33cc7ce 100644
  		} else {
  			slog_warning(client, "unsupported startup parameter: %s=%s", key, val);
  			disconnect_client(client, true, "unsupported startup parameter: %s", key);
-@@ -864,6 +867,12 @@ static bool handle_client_work(PgSocket *client, PktHdr *pkt)
+@@ -875,6 +878,12 @@ static bool handle_client_work(PgSocket *client, PktHdr *pkt)
  	if (client->pool->db->admin)
  		return admin_handle_client(client, pkt);
  
@@ -333,7 +340,7 @@ index 11b4bee..589a7e6 100644
  	db->db_dead = 0;
  	/* assuming not an autodb */
 diff --git a/src/main.c b/src/main.c
-index 43d6582..9235730 100644
+index b0dcb58..de4b65d 100644
 --- a/src/main.c
 +++ b/src/main.c
 @@ -34,7 +34,7 @@
@@ -380,7 +387,7 @@ index 43d6582..9235730 100644
  {NULL}
  };
  
-@@ -828,6 +849,14 @@ static void cleanup(void)
+@@ -832,6 +853,14 @@ static void cleanup(void)
  	xfree(&cf_server_tls_key_file);
  	xfree(&cf_server_tls_ciphers);
  
@@ -396,7 +403,7 @@ index 43d6582..9235730 100644
  	xfree((char **)&cf_syslog_ident);
  	xfree((char **)&cf_syslog_facility);
 diff --git a/src/objects.c b/src/objects.c
-index 7bd159e..dd1570e 100644
+index af5b167..b252293 100644
 --- a/src/objects.c
 +++ b/src/objects.c
 @@ -487,6 +487,29 @@ PgDatabase *find_database(const char *name)
