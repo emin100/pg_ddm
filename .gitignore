@@ -3,7 +3,8 @@ etcd/*.etcd
 etcd/Documentation
 etcd/README*
 mask_ruby/*.csv
-pgbouncer/*
+pgbouncer/.objs
+pgbouncer/pgbouncer*
 conf/log
 pgbouncer_mask
 *.pid
