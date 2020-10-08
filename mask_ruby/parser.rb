@@ -368,7 +368,7 @@ class PgQueryOpt
             @change_name = nil
           end
 
-          if item == 'fields' && @remove_ref == 3 && !@return_column_ref.nil?
+          if item == 'fields' && @remove_ref == 3 && !@return_column_ref.nil? && @return_column_ref['del'].nil?
             unless @return_column_ref.empty?
               items.delete(item)
               items[item]  = [@return_column_ref['ResTarget']['val']]
