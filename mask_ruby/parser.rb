@@ -436,8 +436,10 @@ class PgQueryOpt
 
         end
         parse(items[i], table_list, masked) if reparse == 1
-        if items[i].empty?
-          items.delete_at(i)
+        unless items[i].nil?
+          if items[i].empty?
+            items.delete_at(i)
+          end
         end
         i += 1
       end
