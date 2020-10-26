@@ -384,6 +384,7 @@ def dbmeta(url_type=None):
 
                 if form_cred.validate_on_submit():
                     conn = None
+                    error_auth_form = False
                     try:
                         db = databases[form.db.data]
                         conn = psycopg2.connect(db, user=form_cred.username.data, password=form_cred.password.data)
