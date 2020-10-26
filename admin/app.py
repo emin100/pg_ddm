@@ -405,13 +405,18 @@ def dbmeta(url_type=None):
                             key = '/{}/{}/{}'.format(str(form.db.data), str(row[1]), str(row[2]))
                             etcd_conn.put(key, json.dumps(row[3]))
                         cur.close()
-                    except (Exception, psycopg2.DatabaseError) as e:
-                        flash(_('DB Error'), e)
-                    except (Exception, psycopg2.DatabaseError) as e:
-                        flash(_('General Error'), e)
+                    except (psycopg2.DatabaseError) as e:
+                        flash(_('DB Error') + ': ' + str(e), 'error')
+                        error_auth_form = True
+                    except (Exception) as e:
+                        flash(_('General Error') + ': ' + str(e), 'error')
+                        error_auth_form = True
                     finally:
                         if conn is not None:
                             conn.close()
+                    if error_auth_form is False:
+                        flash(_('Database Metadata') + ' ' + _('Updated'), 'info')
+                        return flask.redirect(flask.url_for('dbmeta'))
 
                     flash(_('Database Metadata') + ' ' + _('Updated'), 'info')
                     return flask.redirect(flask.url_for('dbmeta'))
