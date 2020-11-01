@@ -44,6 +44,14 @@ cp -R pgbouncer_diff/* pgbouncer/
 cd pgbouncer
 git apply pg_ddm.patch
 ``` 
+    
+    
+### Install Ruby Things
+ 
+```bash
+sudo gem install pg_ddm_sql_modifier
+
+```
 
 ### Install pg_ddm(Need root user for install)
    
@@ -52,17 +60,6 @@ sudo adduser --system --shell /bin/bash --home /etc/pg_ddm --group  pg_ddm
 sudo passwd pg_ddm
 cd ..
 ./tools/local_install.sh 1 pg_ddm 1
-```
-    
-    
-### Install Ruby Things
- 
-```bash
-cd pg_query
-gem build pg_query.gemspec 
-sudo gem install pg_query-*.gem
-sudo gem install hashie etcdv3 awesome_print
-cd ..
 ```
     
 ### Start etcd

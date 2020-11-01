@@ -11,7 +11,7 @@ index a0eb45e..c5c5352 100644
 +.cproject
 +.settings
 diff --git a/Makefile b/Makefile
-index 9884dd8..cf2deae 100644
+index 8f572b0..faccd4d 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -1,9 +1,9 @@
@@ -44,13 +44,13 @@ index 9884dd8..cf2deae 100644
  	include/sbuf.h \
  	include/scram.h \
  	include/server.h \
-@@ -58,19 +62,19 @@ pgbouncer_SOURCES = \
+@@ -58,19 +62,18 @@ pgbouncer_SOURCES = \
  	include/common/unicode_norm.h \
  	include/common/unicode_norm_table.h
  
 -pgbouncer_CPPFLAGS = -Iinclude $(CARES_CFLAGS) $(LIBEVENT_CFLAGS) $(TLS_CPPFLAGS)
-+pg_ddm_CPPFLAGS = -Iinclude $(CARES_CFLAGS) $(LIBEVENT_CFLAGS) $(shell pkg-config --cflags ruby)
- 
+-
++pg_ddm_CPPFLAGS = -Iinclude $(CARES_CFLAGS) $(LIBEVENT_CFLAGS) $(TLS_CPPFLAGS) $(shell pkg-config --cflags ruby)
  # include libusual sources directly
  AM_FEATURES = libusual
 -pgbouncer_EMBED_LIBUSUAL = 1
@@ -68,7 +68,7 @@ index 9884dd8..cf2deae 100644
  
  # files in tgz
  EXTRA_DIST = AUTHORS COPYRIGHT Makefile config.mak.in config.sub config.guess \
-@@ -91,19 +95,19 @@ LIBUSUAL_DIST = $(filter-out %/config.h, $(sort $(wildcard \
+@@ -91,19 +94,19 @@ LIBUSUAL_DIST = $(filter-out %/config.h, $(sort $(wildcard \
  		lib/README lib/COPYRIGHT \
  		lib/find_modules.sh )))
  
@@ -93,31 +93,16 @@ index 9884dd8..cf2deae 100644
  bin_PROGRAMS += pgbevent
  endif
  
-@@ -146,17 +150,17 @@ zip: configure clean
- 			--without-cares \
- 			--enable-evdns \
- 		&& $(MAKE) \
--		&& $(w32arch)-strip pgbouncer.exe pgbevent.dll \
--		&& zip pgbouncer.zip pgbouncer.exe pgbevent.dll doc/*.html
--	zip -l buildexe/pgbouncer.zip etc/pgbouncer.ini etc/userlist.txt
--	mv buildexe/pgbouncer.zip $(w32zip)
-+		&& $(w32arch)-strip pg_ddm.exe pgbevent.dll \
-+		&& zip pg_ddm.zip pg_ddm.exe pgbevent.dll doc/*.html
-+	zip -l buildexe/pg_ddm.zip etc/pg_ddm.ini etc/userlist.txt
-+	mv buildexe/pg_ddm.zip $(w32zip)
+@@ -138,7 +141,7 @@ check: all
+ w32zip = $(PACKAGE_TARNAME)-$(PACKAGE_VERSION)-windows-$(host_cpu).zip
+ zip: $(w32zip)
  
- zip-up: $(w32zip)
--	rsync $(w32zip) pgf:web/pgbouncer/htdocs/win32/
-+	rsync $(w32zip) pgf:web/pg_ddm/htdocs/win32/
- 
- tgz = $(PACKAGE_TARNAME)-$(PACKAGE_VERSION).tar.gz
- tgz-up: $(tgz)
--	rsync $(tgz) pgf:web/pgbouncer/htdocs/testing/
-+	rsync $(tgz) pgf:web/pg_ddm/htdocs/testing/
- 
- .PHONY: tags
- tags:
-@@ -167,5 +171,5 @@ htmls:
+-$(w32zip): pgbouncer.exe pgbevent.dll etc/pgbouncer.ini etc/userlist.txt README.md COPYRIGHT
++$(w32zip): pg_ddm.exe pgbevent.dll etc/pg_ddm.ini etc/userlist.txt README.md COPYRIGHT
+ 	rm -rf $(basename $@)
+ 	mkdir $(basename $@)
+ 	cp $^ $(basename $@)
+@@ -156,5 +159,5 @@ htmls:
  		mkdir -p html && $(PANDOC) $$f -o html/`basename $$f`.html; \
  	done
  
@@ -125,7 +110,7 @@ index 9884dd8..cf2deae 100644
 +doc/pg_ddm.1 doc/pg_ddm.5:
  	$(MAKE) -C doc
 diff --git a/configure.ac b/configure.ac
-index 36fec7c..e3b44ff 100644
+index 197079f..0472870 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -1,9 +1,9 @@
@@ -136,14 +121,14 @@ index 36fec7c..e3b44ff 100644
 -        [https://github.com/pgbouncer/pgbouncer/issues], [],
 -        [https://www.pgbouncer.org/])
 +AC_INIT([Pg_Ddm],
-+        [1.14.0.1],
++        [1.14.0.2],
 +        [https://github.com/emin100/pg_ddm/issues], [],
 +        [https://emin100.github.io/pg_ddm/])
  AC_CONFIG_SRCDIR(src/janitor.c)
- AC_CONFIG_HEADER(lib/usual/config.h)
+ AC_CONFIG_HEADERS([lib/usual/config.h])
  AC_PREREQ([2.59])
 diff --git a/doc/Makefile b/doc/Makefile
-index cc1d6ad..e83c3d4 100644
+index cc1d6ad..9cc8f54 100644
 --- a/doc/Makefile
 +++ b/doc/Makefile
 @@ -1,6 +1,6 @@
@@ -184,12 +169,12 @@ index cc1d6ad..e83c3d4 100644
  
  web:
 -	$(MAKE) -C ../../pgbouncer.github.io
-+	$(MAKE) -C ../../pg_ddm.github.io
++	$(MAKE) -C ../../emin100.github.io
 diff --git a/include/bouncer.h b/include/bouncer.h
-index 4701aec..658b234 100644
+index c615322..5f8701a 100644
 --- a/include/bouncer.h
 +++ b/include/bouncer.h
-@@ -104,6 +104,8 @@ typedef struct ScramState ScramState;
+@@ -103,6 +103,8 @@ typedef struct ScramState ScramState;
  
  extern int cf_sbuf_len;
  
@@ -204,9 +189,9 @@ index 4701aec..658b234 100644
  	struct AATree user_tree;	/* users that have been queried on this database */
 +
 +	char *role;
-+	char *root;
-+	int route;
-+	char *search_path;
++    char *root;
++    int route;
++    char *search_path;
  };
  
  
@@ -240,25 +225,17 @@ index b8c2d2f..b8d722e 100644
  PgPool *get_pool(PgDatabase *, PgUser *);
  PgSocket *compare_connections_by_time(PgSocket *lhs, PgSocket *rhs);
 diff --git a/lib b/lib
-index 8b604da..56b3e73 160000
+index bbf0e37..473617e 160000
 --- a/lib
 +++ b/lib
 @@ -1 +1 @@
--Subproject commit 8b604da54a44423fa8e01d6f0039b0480784cff0
-+Subproject commit 56b3e73181c1682375481b607a35d813cac84382
+-Subproject commit bbf0e37b709e19edc9ea5224c78de151da68f3dd
++Subproject commit 473617e9a0f44f52da8fc07396b13be5249317f7
 diff --git a/src/client.c b/src/client.c
-index 28c6556..42c76ca 100644
+index 56cb16a..222ca01 100644
 --- a/src/client.c
 +++ b/src/client.c
-@@ -58,6 +58,7 @@ static bool check_client_passwd(PgSocket *client, const char *passwd)
- 		default:
- 			return false;
- 		}
-+		break;
- 	case AUTH_MD5:
- 		if (strlen(passwd) != MD5_PASSWD_LEN)
- 			return false;
-@@ -483,10 +484,12 @@ static bool decide_startup_pool(PgSocket *client, PktHdr *pkt)
+@@ -534,11 +534,13 @@ static bool decide_startup_pool(PgSocket *client, PktHdr *pkt)
  		} else if (strcmp(key, "application_name") == 0) {
  			set_appname(client, val);
  			appname_found = true;
@@ -268,12 +245,14 @@ index 28c6556..42c76ca 100644
 +			slog_debug(client, "got var: %s=%s", key, val);*/
  		} else if (strlist_contains(cf_ignore_startup_params, key)) {
  			slog_debug(client, "ignoring startup parameter: %s=%s", key, val);
+-		} else {
 +		} else if (varcache_set(&client->vars, key, val)) {
-+			slog_debug(client, "got var: %s=%s", key, val);
- 		} else {
++        	slog_debug(client, "got var: %s=%s", key, val);
++        } else {
  			slog_warning(client, "unsupported startup parameter: %s=%s", key, val);
  			disconnect_client(client, true, "unsupported startup parameter: %s", key);
-@@ -875,6 +878,12 @@ static bool handle_client_work(PgSocket *client, PktHdr *pkt)
+ 			return false;
+@@ -938,6 +940,12 @@ static bool handle_client_work(PgSocket *client, PktHdr *pkt)
  	if (client->pool->db->admin)
  		return admin_handle_client(client, pkt);
  
@@ -287,7 +266,7 @@ index 28c6556..42c76ca 100644
  	if (!find_server(client))
  		return false;
 diff --git a/src/loader.c b/src/loader.c
-index 11b4bee..589a7e6 100644
+index bc6da76..f137f23 100644
 --- a/src/loader.c
 +++ b/src/loader.c
 @@ -195,6 +195,10 @@ bool parse_database(void *base, const char *name, const char *connstr)
@@ -301,11 +280,10 @@ index 11b4bee..589a7e6 100644
  
  	int v_port;
  
-@@ -222,7 +226,15 @@ bool parse_database(void *base, const char *name, const char *connstr)
+@@ -222,6 +226,14 @@ bool parse_database(void *base, const char *name, const char *connstr)
  
  		if (strcmp("dbname", key) == 0) {
  			dbname = val;
--		} else if (strcmp("host", key) == 0) {
 +		} else if (strcmp("root", key) == 0) {
 +			root = val;
 +		} else if (strcmp("role", key) == 0) {
@@ -314,10 +292,9 @@ index 11b4bee..589a7e6 100644
 +            route = atoi(val);
 +        }  else if (strcmp("search_path", key) == 0) {
 +            search_path = val;
-+        } else if (strcmp("host", key) == 0) {
+ 		} else if (strcmp("host", key) == 0) {
  			host = val;
  		} else if (strcmp("port", key) == 0) {
- 			port = val;
 @@ -284,6 +296,20 @@ bool parse_database(void *base, const char *name, const char *connstr)
  		}
  	}
@@ -340,7 +317,7 @@ index 11b4bee..589a7e6 100644
  	db->db_dead = 0;
  	/* assuming not an autodb */
 diff --git a/src/main.c b/src/main.c
-index b0dcb58..de4b65d 100644
+index 8eb1c4c..29b8ffc 100644
 --- a/src/main.c
 +++ b/src/main.c
 @@ -34,7 +34,7 @@
@@ -352,7 +329,7 @@ index b0dcb58..de4b65d 100644
  	printf("Usage:\n");
  	printf("  %s [OPTION]... CONFIG_FILE\n", exe);
  	printf("\nOptions:\n");
-@@ -169,6 +169,16 @@ char *cf_server_tls_ca_file;
+@@ -175,6 +175,16 @@ char *cf_server_tls_ca_file;
  char *cf_server_tls_cert_file;
  char *cf_server_tls_key_file;
  char *cf_server_tls_ciphers;
@@ -369,10 +346,10 @@ index b0dcb58..de4b65d 100644
  
  /*
   * config file description
-@@ -306,6 +316,17 @@ CF_ABS("server_tls_key_file", CF_STR, cf_server_tls_key_file, CF_NO_RELOAD, ""),
+@@ -283,6 +293,17 @@ CF_ABS("server_tls_ciphers", CF_STR, cf_server_tls_ciphers, CF_NO_RELOAD, "fast"
+ CF_ABS("server_tls_key_file", CF_STR, cf_server_tls_key_file, CF_NO_RELOAD, ""),
  CF_ABS("server_tls_protocols", CF_STR, cf_server_tls_protocols, CF_NO_RELOAD, "secure"),
- CF_ABS("server_tls_ciphers", CF_STR, cf_server_tls_ciphers, CF_NO_RELOAD, "fast"),
- 
+ CF_ABS("server_tls_sslmode", CF_LOOKUP(sslmode_map), cf_server_tls_sslmode, CF_NO_RELOAD, "disable"),
 +CF_ABS("etcd_host", CF_STR, cf_etcd_host, CF_NO_RELOAD, ""),
 +CF_ABS("etcd_port", CF_STR, cf_etcd_port, CF_NO_RELOAD, ""),
 +CF_ABS("etcd_user", CF_STR, cf_etcd_user, CF_NO_RELOAD, ""),
@@ -384,13 +361,13 @@ index b0dcb58..de4b65d 100644
 +CF_ABS("pg_ddm_ini_route", CF_INT, cf_pg_ddm_ini_route, CF_NO_RELOAD, "0"),
 +CF_ABS("pg_ddm_rewrite_route", CF_INT, cf_pg_ddm_rewrite_route, CF_NO_RELOAD, "0"),
 +
- {NULL}
- };
- 
-@@ -832,6 +853,14 @@ static void cleanup(void)
- 	xfree(&cf_server_tls_key_file);
- 	xfree(&cf_server_tls_ciphers);
- 
+ #ifdef WIN32
+ CF_ABS("service_name", CF_STR, cf_jobname, CF_NO_RELOAD, NULL), /* alias for job_name */
+ #endif
+@@ -828,6 +849,13 @@ static void cleanup(void)
+ 	xfree(&cf_client_tls_cert_file);
+ 	xfree(&cf_client_tls_key_file);
+ 	xfree(&cf_client_tls_ciphers);
 +    xfree(&cf_etcd_host);
 +    xfree(&cf_etcd_port);
 +    xfree(&cf_etcd_user);
@@ -398,12 +375,11 @@ index b0dcb58..de4b65d 100644
 +    xfree(&cf_user_regex);
 +    xfree(&cf_tag_regex);
 +    xfree(&cf_tag_users);
-+
- 	xfree((char **)&cf_logfile);
- 	xfree((char **)&cf_syslog_ident);
- 	xfree((char **)&cf_syslog_facility);
+ 	xfree(&cf_client_tls_dheparams);
+ 	xfree(&cf_client_tls_ecdhecurve);
+ 	xfree(&cf_server_tls_protocols);
 diff --git a/src/objects.c b/src/objects.c
-index af5b167..b252293 100644
+index ebca82f..ec54dba 100644
 --- a/src/objects.c
 +++ b/src/objects.c
 @@ -487,6 +487,29 @@ PgDatabase *find_database(const char *name)

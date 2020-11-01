@@ -1,11 +1,3 @@
 [submodule "pgbouncer"]
 	path = pgbouncer
 	url = https://github.com/pgbouncer/pgbouncer.git
-
-#[submodule "pg_query"]
-#	path = pg_query
-#	url = https://github.com/emin100/pg_query.git
-[submodule "pg_query"]
-	path = pg_query
-	url = https://github.com/emin100/pg_query.git
-	branch = my_master

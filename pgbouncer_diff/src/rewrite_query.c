@@ -69,7 +69,7 @@ bool rewrite_query(PgSocket *client, PktHdr *pkt) {
 
 	loggable_query_str = strip_newlines(query_str);
 	slog_debug(client, "rewrite_query: Username => %s",
-			client->auth_user->name);
+			client->login_user->name);
 	slog_debug(client, "rewrite_query: Orig Query=> %s", loggable_query_str);
 	free(loggable_query_str);
 
@@ -79,7 +79,7 @@ bool rewrite_query(PgSocket *client, PktHdr *pkt) {
 
 	if (cf_pg_ddm_enabled) {
         /* call ruby function to rewrite the query */
-        qr = rubycall(client, client->auth_user->name, query_str);
+        qr = rubycall(client, client->login_user->name, query_str);
         tmp_new_query_str = qr.query;
     }else {
         tmp_new_query_str = query_str;
@@ -148,7 +148,7 @@ bool rewrite_query(PgSocket *client, PktHdr *pkt) {
 
 	if (cf_pg_ddm_rewrite_route) {
 		if (qr.query == NULL) {
-			qr = rubycall_role(client, client->auth_user->name, query_str);
+			qr = rubycall_role(client, client->login_user->name, query_str);
 		}
         slog_debug(client, "DB Role: %s", qr.role);
 		tmp_new_query_role = qr.role;
@@ -164,7 +164,7 @@ bool rewrite_query(PgSocket *client, PktHdr *pkt) {
 					slog_error(client,
 							"check ini and/or routing rules function");
 				} else {
-					pool = get_pool(db, client->auth_user);
+					pool = get_pool(db, client->login_user);
 					if (client->pool != pool) {
 						if (client->link != NULL) {
 							slog_debug(client,

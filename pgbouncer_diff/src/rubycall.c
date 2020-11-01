@@ -68,7 +68,7 @@ struct query_return rubycall_role(PgSocket *client, char *username,
 		ruby_script("RewriteQuery");
 		rb_define_module("Gem");
 		rb_require("rubygems");
-		rb_require("/etc/pg_ddm/mask_ruby/parser.rb");
+		rb_eval_string_protect("require 'pg_ddm_sql_modifier'", &state);
 		loader = 1;
 	}
 
@@ -109,7 +109,7 @@ struct query_return rubycall(PgSocket *client, char *username, char *query_str) 
 		ruby_script("RewriteQuery");
 		rb_define_module("Gem");
 		rb_require("rubygems");
-		rb_require("/etc/pg_ddm/mask_ruby/parser.rb");
+		rb_eval_string_protect("require 'pg_ddm_sql_modifier'", &state);
 		loader = 1;
 	}
 
