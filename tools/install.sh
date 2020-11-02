@@ -15,6 +15,7 @@ then
     cd pgbouncer
     git stash
     git stash drop
+
 else
     git clone https://github.com/emin100/pg_ddm.git --recursive
     cd ${PgDdmSourcePath}
@@ -64,7 +65,7 @@ make -j4
 make install
 
 
-gem install pg_query*.gem
+gem install pg_ddm_sql_modifier
 
 cd $PgDdmSourcePath
 
