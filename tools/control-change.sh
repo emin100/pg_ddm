@@ -22,6 +22,7 @@ if [[ -f "/etc/pg_ddm/mask_ruby/mask.sql" ]]; then
     rm /etc/pg_ddm/mask_ruby/mask.sql
 fi
 
-python3 app.py &
-su pg_ddm -c 'pg_ddm /etc/pg_ddm/pg_ddm.ini'
+su pg_ddm -c 'pg_ddm /etc/pg_ddm/pg_ddm.ini -d -R'
+
+python3 app.py
 exit
