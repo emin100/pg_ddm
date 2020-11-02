@@ -224,18 +224,19 @@ index b8c2d2f..b8d722e 100644
  PgUser *find_user(const char *name);
  PgPool *get_pool(PgDatabase *, PgUser *);
  PgSocket *compare_connections_by_time(PgSocket *lhs, PgSocket *rhs);
-diff --git a/lib b/lib
-index bbf0e37..473617e 160000
---- a/lib
-+++ b/lib
-@@ -1 +1 @@
--Subproject commit bbf0e37b709e19edc9ea5224c78de151da68f3dd
-+Subproject commit 473617e9a0f44f52da8fc07396b13be5249317f7
 diff --git a/src/client.c b/src/client.c
-index 56cb16a..222ca01 100644
+index 56cb16a..8f012bf 100644
 --- a/src/client.c
 +++ b/src/client.c
-@@ -534,11 +534,13 @@ static bool decide_startup_pool(PgSocket *client, PktHdr *pkt)
+@@ -61,6 +61,7 @@ static bool check_client_passwd(PgSocket *client, const char *passwd)
+ 		default:
+ 			return false;
+ 		}
++		break;
+ 	case AUTH_MD5:
+ 		if (strlen(passwd) != MD5_PASSWD_LEN)
+ 			return false;
+@@ -534,11 +535,13 @@ static bool decide_startup_pool(PgSocket *client, PktHdr *pkt)
  		} else if (strcmp(key, "application_name") == 0) {
  			set_appname(client, val);
  			appname_found = true;
@@ -252,7 +253,7 @@ index 56cb16a..222ca01 100644
  			slog_warning(client, "unsupported startup parameter: %s=%s", key, val);
  			disconnect_client(client, true, "unsupported startup parameter: %s", key);
  			return false;
-@@ -938,6 +940,12 @@ static bool handle_client_work(PgSocket *client, PktHdr *pkt)
+@@ -938,6 +941,12 @@ static bool handle_client_work(PgSocket *client, PktHdr *pkt)
  	if (client->pool->db->admin)
  		return admin_handle_client(client, pkt);
  
