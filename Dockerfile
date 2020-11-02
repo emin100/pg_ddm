@@ -61,7 +61,7 @@ RUN useradd -ms /bin/bash pg_ddm
 
 
 ADD tools/install.sh /usr/bin/
-RUN /usr/bin/install.sh /home/pg_ddm 1 pg_ddm 1
+#RUN /usr/bin/install.sh /home/pg_ddm 1 pg_ddm 1
 #
 ADD tools/control-change.sh /usr/bin/
 #

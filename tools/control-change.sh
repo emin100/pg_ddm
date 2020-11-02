@@ -4,6 +4,12 @@ service etcd start
 
 service postgresql start
 
+
+if [[ ! -d "/etc/pg_ddm" ]]; then
+    /usr/bin/install.sh /home/pg_ddm 1 pg_ddm 1
+fi
+
+
 #su postgres -c 'pgbouncer -d /etc/pgbouncer/pgbouncer.ini'
 cd /etc/pg_ddm/
 source venv/bin/activate
