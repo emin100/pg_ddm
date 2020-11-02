@@ -380,7 +380,7 @@ index 8eb1c4c..29b8ffc 100644
  	xfree(&cf_client_tls_ecdhecurve);
  	xfree(&cf_server_tls_protocols);
 diff --git a/src/objects.c b/src/objects.c
-index ebca82f..ec54dba 100644
+index ebca82f..d89303d 100644
 --- a/src/objects.c
 +++ b/src/objects.c
 @@ -487,6 +487,29 @@ PgDatabase *find_database(const char *name)
@@ -413,3 +413,15 @@ index ebca82f..ec54dba 100644
  /* find existing user */
  PgUser *find_user(const char *name)
  {
+@@ -596,6 +619,11 @@ bool check_fast_fail(PgSocket *client)
+ 	int cnt;
+ 	PgPool *pool = client->pool;
+ 
++	if ( !pool ) {
++	    disconnect_client(client, true, "login rejected");
++	    return false;
++	}
++
+ 	/* If last login succeeded, client can go ahead. */
+ 	if (!pool->last_login_failed)
+ 		return true;
