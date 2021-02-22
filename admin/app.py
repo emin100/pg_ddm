@@ -25,13 +25,16 @@ def check_roles(url):
     url = (url.split('/'))[-1]
     if url in ['login', 'logout', ''] or request.endpoint == 'static':
         return True
-    logined_user = g.user
-    if url in ['change', 'delete'] and logined_user.role not in ['admin', 'editor']:
-        return False
-    elif url in ['system_users', 'pg_ddm', 'external_services'] and logined_user.role not in ['admin']:
-        return False
+    if g.user:
+        logined_user = g.user
+        if url in ['change', 'delete'] and logined_user.role not in ['admin', 'editor']:
+            return False
+        elif url in ['system_users', 'pg_ddm', 'external_services'] and logined_user.role not in ['admin']:
+            return False
+        else:
+            return True
     else:
-        return True
+        return False
 
 
 def create_app():
