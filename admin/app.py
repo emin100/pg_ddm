@@ -25,7 +25,7 @@ def check_roles(url):
     url = (url.split('/'))[-1]
     if url in ['login', 'logout', ''] or request.endpoint == 'static':
         return True
-    if g.user:
+    if g.get('user') is not None:
         logined_user = g.user
         if url in ['change', 'delete'] and logined_user.role not in ['admin', 'editor']:
             return False

@@ -35,9 +35,10 @@ class User(UserMixin):
             return False
 
     def get(self, username):
-        user_record = self.etcd.get('/appuser/' + username)
+        user_record = self.etcd.get('/appuser/' + username)[0]
+        print(user_record)
         if user_record is not None:
-            user = json.loads(user_record[0])
+            user = json.loads(user_record)
 
             if user is not None:
                 if user['enabled'] is True:
