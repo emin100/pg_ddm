@@ -35,17 +35,19 @@ class User(UserMixin):
             return False
 
     def get(self, username):
-        user = json.loads(self.etcd.get('/appuser/' + username)[0])
+        user_record = self.etcd.get('/appuser/' + username)
+        if user_record is not None:
+            user = json.loads(user_record[0])
 
-        if user is not None:
-            if user['enabled'] is True:
-                self.password_hash = user['password']
-                self.username = user['username']
-                self.locale = user['locale']
-                self.enabled = user['enabled']
-                self.email = user['email']
-                self.role = user['role']
-                return True
+            if user is not None:
+                if user['enabled'] is True:
+                    self.password_hash = user['password']
+                    self.username = user['username']
+                    self.locale = user['locale']
+                    self.enabled = user['enabled']
+                    self.email = user['email']
+                    self.role = user['role']
+                    return True
         return False
 
     def set(self):
