@@ -10,3 +10,4 @@ passlib
 psycopg2-binary
 requests
 WTForms==2.3.3
+protobuf==3.20.*
