@@ -9,3 +9,4 @@ etcd3
 passlib
 psycopg2-binary
 requests
+WTForms==2.3.3
